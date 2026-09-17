@@ -4,20 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>НОА</title>
+
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+
     body {
       font-family: Arial, Helvetica, sans-serif;
       background: #070707;
-      color: #ffffff;
+      color: #fff;
       height: 100vh;
       overflow: hidden;
     }
-    /* Красное свечение фона */
+
     body::before {
       content: "";
       position: fixed;
@@ -30,35 +32,41 @@
       left: 30%;
       pointer-events: none;
     }
+
     .app {
       height: 100vh;
       display: flex;
     }
-    /* SIDEBAR */
+
+    /* БОКОВАЯ ПАНЕЛЬ */
+
     .sidebar {
       width: 245px;
-      background: rgba(12, 12, 12, 0.9);
+      background: rgba(12, 12, 12, 0.92);
       border-right: 1px solid #202020;
       padding: 22px;
       display: flex;
       flex-direction: column;
       backdrop-filter: blur(20px);
     }
+
     .logo {
       font-size: 30px;
       font-weight: 900;
       letter-spacing: -2px;
       margin-bottom: 35px;
+
       background: linear-gradient(
         120deg,
-        #ffffff,
+        #fff,
         #ff3333,
         #990000
       );
+
       -webkit-background-clip: text;
       color: transparent;
-      text-shadow: 0 0 30px rgba(255, 0, 0, 0.25);
     }
+
     .new-chat {
       width: 100%;
       padding: 13px;
@@ -67,39 +75,46 @@
       background: #120707;
       color: white;
       cursor: pointer;
-      transition: 0.25s;
       font-size: 14px;
+      transition: 0.25s;
     }
+
     .new-chat:hover {
       background: #240909;
       border-color: #ff2020;
-      box-shadow: 0 0 18px rgba(255, 0, 0, 0.18);
+      box-shadow: 0 0 18px rgba(255, 0, 0, 0.2);
     }
+
     .sidebar-bottom {
       margin-top: auto;
       color: #555;
       font-size: 12px;
     }
-    /* MAIN */
+
+    /* ОСНОВНАЯ ОБЛАСТЬ */
+
     .main {
       flex: 1;
       display: flex;
       flex-direction: column;
       position: relative;
     }
+
     .topbar {
       height: 65px;
       border-bottom: 1px solid #1d1d1d;
       display: flex;
       align-items: center;
       padding: 0 28px;
-      background: rgba(8, 8, 8, 0.75);
+      background: rgba(8, 8, 8, 0.8);
       backdrop-filter: blur(15px);
     }
+
     .top-title {
       font-weight: 700;
       font-size: 15px;
     }
+
     .status {
       margin-left: auto;
       color: #777;
@@ -108,6 +123,7 @@
       align-items: center;
       gap: 7px;
     }
+
     .status-dot {
       width: 7px;
       height: 7px;
@@ -115,52 +131,65 @@
       background: #ff2020;
       box-shadow: 0 0 10px #ff0000;
     }
-    /* CHAT */
+
+    /* ЧАТ */
+
     .chat {
       flex: 1;
       overflow-y: auto;
       padding: 40px 20px 120px;
     }
+
     .chat::-webkit-scrollbar {
       width: 5px;
     }
+
     .chat::-webkit-scrollbar-thumb {
       background: #2b1111;
       border-radius: 10px;
     }
-    /* WELCOME */
+
+    /* ПРИВЕТСТВИЕ */
+
     .welcome {
       max-width: 700px;
       margin: 15vh auto 0;
       text-align: center;
     }
+
     .welcome-logo {
       font-size: 72px;
       font-weight: 900;
       letter-spacing: -5px;
+
       background: linear-gradient(
         135deg,
-        #ffffff 20%,
+        #fff 20%,
         #ff3030 60%,
         #700000
       );
+
       -webkit-background-clip: text;
       color: transparent;
-      text-shadow:
-        0 0 35px rgba(255, 0, 0, 0.25);
+
+      text-shadow: 0 0 35px rgba(255, 0, 0, 0.25);
     }
+
     .welcome h2 {
       margin-top: 12px;
       font-size: 18px;
       color: #888;
       font-weight: 400;
     }
+
     .welcome p {
       margin-top: 10px;
       color: #444;
       font-size: 13px;
     }
-    /* MESSAGES */
+
+    /* СООБЩЕНИЯ */
+
     .message {
       max-width: 760px;
       margin: 0 auto 24px;
@@ -168,34 +197,41 @@
       gap: 13px;
       animation: messageIn 0.3s ease;
     }
+
     @keyframes messageIn {
       from {
         opacity: 0;
         transform: translateY(8px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
+
     .avatar {
       width: 36px;
       height: 36px;
       min-width: 36px;
       border-radius: 11px;
+
       display: flex;
       align-items: center;
       justify-content: center;
+
       background: linear-gradient(
         135deg,
         #ff2222,
         #550000
       );
-      box-shadow:
-        0 0 18px rgba(255, 0, 0, 0.2);
+
+      box-shadow: 0 0 18px rgba(255, 0, 0, 0.2);
+
       font-size: 13px;
       font-weight: 800;
     }
+
     .message-content {
       padding: 9px 14px;
       background: #101010;
@@ -204,36 +240,46 @@
       line-height: 1.55;
       font-size: 14px;
     }
-    /* INPUT */
+
+    /* ПОЛЕ ВВОДА */
+
     .input-area {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
+
       padding: 20px 25px 25px;
+
       background: linear-gradient(
         transparent,
         #070707 35%
       );
     }
+
     .input-box {
       max-width: 760px;
       margin: auto;
+
       display: flex;
       align-items: center;
+
       background: #101010;
       border: 1px solid #292929;
       border-radius: 17px;
+
       padding: 7px;
-      box-shadow:
-        0 0 30px rgba(0, 0, 0, 0.5);
+
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+
       transition: 0.25s;
     }
+
     .input-box:focus-within {
       border-color: #8b1515;
-      box-shadow:
-        0 0 25px rgba(255, 0, 0, 0.12);
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.12);
     }
+
     .input-box input {
       flex: 1;
       background: transparent;
@@ -243,190 +289,271 @@
       padding: 13px;
       font-size: 14px;
     }
+
     .input-box input::placeholder {
       color: #555;
     }
+
     .send {
       width: 42px;
       height: 42px;
+
       border: none;
       border-radius: 12px;
+
       background: #b40000;
       color: white;
+
       cursor: pointer;
       font-size: 18px;
+
       transition: 0.25s;
-      box-shadow:
-        0 0 15px rgba(255, 0, 0, 0.2);
+
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
     }
+
     .send:hover {
       background: #e00000;
-      box-shadow:
-        0 0 25px rgba(255, 0, 0, 0.4);
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
       transform: translateY(-1px);
     }
-    /* MOBILE */
+
+    /* ТЕЛЕФОН */
+
     @media (max-width: 700px) {
       .sidebar {
         display: none;
       }
+
       .topbar {
         padding: 0 18px;
       }
+
       .welcome {
         margin-top: 20vh;
       }
+
       .welcome-logo {
         font-size: 58px;
       }
+
       .chat {
         padding-left: 12px;
         padding-right: 12px;
       }
+
       .input-area {
         padding: 12px;
       }
     }
   </style>
 </head>
+
 <body>
+
 <div class="app">
-  <!-- SIDEBAR -->
+
   <aside class="sidebar">
+
     <div class="logo">
       НОА
     </div>
+
     <button class="new-chat" onclick="newChat()">
       + Новый чат
     </button>
+
     <div class="sidebar-bottom">
       НОА AI
     </div>
+
   </aside>
-  <!-- MAIN -->
+
+
   <main class="main">
+
     <header class="topbar">
+
       <div class="top-title">
         НОА
       </div>
+
       <div class="status">
         <div class="status-dot"></div>
         Система активна
       </div>
+
     </header>
-    <!-- CHAT -->
+
+
     <section class="chat" id="chat">
+
       <div class="welcome" id="welcome">
+
         <div class="welcome-logo">
           НОА
         </div>
+
         <h2>
           Твоя нейронная система
         </h2>
+
         <p>
           Задай вопрос, чтобы начать диалог
         </p>
+
       </div>
+
     </section>
-    <!-- INPUT -->
+
+
     <div class="input-area">
+
       <form
         class="input-box"
         onsubmit="sendMessage(event)"
       >
+
         <input
           id="messageInput"
           type="text"
           placeholder="Сообщение для НОА..."
           autocomplete="off"
         >
-        <button
-          class="send"
-          type="submit"
-        >
+
+        <button class="send" type="submit">
           ↑
         </button>
+
       </form>
+
     </div>
+
   </main>
+
 </div>
+
+
 <script>
+
 function sendMessage(event) {
+
   event.preventDefault();
+
   const input =
     document.getElementById("messageInput");
+
   const chat =
     document.getElementById("chat");
+
   const welcome =
     document.getElementById("welcome");
+
   const text =
     input.value.trim();
+
   if (!text) return;
+
   if (welcome) {
     welcome.remove();
   }
-  /* USER MESSAGE */
+
+
   const userMessage =
     document.createElement("div");
+
   userMessage.className = "message";
+
   userMessage.innerHTML = `
     <div class="avatar">
       Я
     </div>
+
     <div class="message-content">
       ${escapeHTML(text)}
     </div>
   `;
+
   chat.appendChild(userMessage);
+
   input.value = "";
+
   chat.scrollTop =
     chat.scrollHeight;
-  /* DEMO AI RESPONSE */
+
+
   setTimeout(() => {
+
     const aiMessage =
       document.createElement("div");
+
     aiMessage.className = "message";
+
     aiMessage.innerHTML = `
       <div class="avatar">
         Н
       </div>
+
       <div class="message-content">
         Я пока работаю в демонстрационном режиме.
         <br><br>
         Скоро мы подключим настоящую нейросеть к НОА.
       </div>
     `;
+
     chat.appendChild(aiMessage);
+
     chat.scrollTop =
       chat.scrollHeight;
+
   }, 600);
+
 }
+
+
 function newChat() {
+
   const chat =
     document.getElementById("chat");
+
   chat.innerHTML = `
+
     <div
       class="welcome"
       id="welcome"
     >
+
       <div class="welcome-logo">
         НОА
       </div>
+
       <h2>
         Твоя нейронная система
       </h2>
+
       <p>
         Задай вопрос, чтобы начать диалог
       </p>
+
     </div>
+
   `;
+
 }
+
+
 function escapeHTML(text) {
+
   const div =
     document.createElement("div");
+
   div.textContent = text;
+
   return div.innerHTML;
+
 }
+
 </script>
+
 </body>
 </html>
