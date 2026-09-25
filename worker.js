@@ -22,9 +22,11 @@ export default {
           body.message ||
           body.prompt ||
           body.text ||
-          (Array.isArray(body.messages)
-            ? body.messages[body.messages.length - 1]?.content
-            : null);
+          (
+            Array.isArray(body.messages)
+              ? body.messages[body.messages.length - 1]?.content
+              : null
+          );
 
         if (!userMessage) {
           return new Response(
@@ -41,48 +43,27 @@ export default {
           );
         }
 
-        const response = await fetch(
-          "https://api.openai.com/v1/responses",
+        const result = await env.AI.run(
+          "@cf/zai-org/glm-4.7-flash",
           {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: "gpt-5.6-luna",
-              instructions:
-                "Ты NOA — дружелюбный персональный ИИ-ассистент. Отвечай понятно, полезно и на языке пользователя.",
-              input: userMessage
-            })
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Ты NOA — дружелюбный персональный AI-ассистент. Отвечай понятно, полезно и на языке пользователя."
+              },
+              {
+                role: "user",
+                content: userMessage
+              }
+            ]
           }
         );
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          return new Response(
-            JSON.stringify({
-              error: data.error?.message || "Ошибка OpenAI API"
-            }),
-            {
-              status: response.status,
-              headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-              }
-            }
-          );
-        }
-
         const reply =
-          data.output_text ||
-          data.output
-            ?.flatMap(item => item.content || [])
-            ?.filter(item => item.type === "output_text")
-            ?.map(item => item.text)
-            ?.join("") ||
-          "NOA не смог получить ответ.";
+          result?.response ||
+          result?.result?.response ||
+          "NOA не смог сформировать ответ.";
 
         return new Response(
           JSON.stringify({
@@ -99,7 +80,7 @@ export default {
       } catch (error) {
         return new Response(
           JSON.stringify({
-            error: "Ошибка сервера NOA"
+            error: "Ошибка Workers AI: " + error.message
           }),
           {
             status: 500,
@@ -112,7 +93,7 @@ export default {
       }
     }
 
-    // Открываем интерфейс NOA
+    // Интерфейс NOA
     return env.ASSETS.fetch(request);
   }
 };
