@@ -59,8 +59,8 @@ export default {
             ]
           }
         );
-
-        const reply =
+  
+   const reply =
           result?.response ||
           result?.result?.response ||
           "NOA не смог сформировать ответ.";
