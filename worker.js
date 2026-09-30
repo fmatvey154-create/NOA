@@ -150,21 +150,17 @@ const finalReply =
     ? reply.trim()
     : extractText(reply).trim();
 
-        if (finalReply) {
-          const keys =
-            result && typeof result === "object"
-              ? Object.keys(result).join(", ")
-              : typeof result;
+     if (!finalReply) {
+  console.error(
+    "NOA choices:",
+    JSON.stringify(result?.choices)
+  );
 
-          console.error("Unexpected AI response:", keys);
-
-          return json({
-            error:
-              "Пустой ответ модели. Поля результата: " +
-              (keys || "нет")
-          }, 502);
-        }
-
+  return json({
+    error: "Модель вернула пустой ответ.",
+    debug: JSON.stringify(result?.choices)
+  }, 502);
+} 
         return json({ reply: finalReply });
 
       } catch (error) {
