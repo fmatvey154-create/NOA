@@ -2,45 +2,59 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // CORS
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json; charset=utf-8"
+    };
+
+    const json = (data, status = 200) =>
+      new Response(JSON.stringify(data), {
+        status,
+        headers: corsHeaders
+      });
+
     if (request.method === "OPTIONS") {
       return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type"
-        }
+        status: 204,
+        headers: corsHeaders
       });
     }
 
-    // API NOA
-    if (url.pathname === "/api/chat" && request.method === "POST") {
+    if (url.pathname === "/api/chat") {
+      if (request.method !== "POST") {
+        return json({ error: "Используй POST-запрос." }, 405);
+      }
+
       try {
         const body = await request.json();
 
-        const userMessage =
-          body.message ||
-          body.prompt ||
-          body.text ||
-          (
-            Array.isArray(body.messages)
-              ? body.messages[body.messages.length - 1]?.content
-              : null
-          );
+        let userMessage =
+          body.message ??
+          body.prompt ??
+          body.text ??
+          null;
 
-        if (!userMessage) {
-          return new Response(
-            JSON.stringify({
-              error: "Сообщение не найдено"
-            }),
-            {
-              status: 400,
-              headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-              }
-            }
-          );
+        if (!userMessage && Array.isArray(body.messages)) {
+          const lastMessage = body.messages
+            .filter(m => m && m.role !== "system")
+            .at(-1);
+
+          userMessage = lastMessage?.content ?? null;
+        }
+
+        if (typeof userMessage !== "string" || !userMessage.trim()) {
+          return json({
+            error: "Сообщение не найдено."
+          }, 400);
+        }
+
+        if (!env.AI) {
+          return json({
+            error: "Workers AI не подключён.",
+            hint: "Проверь Binding с именем AI."
+          }, 500);
         }
 
         const result = await env.AI.run(
@@ -50,50 +64,56 @@ export default {
               {
                 role: "system",
                 content:
-                  "Ты NOA — дружелюбный персональный AI-ассистент. Отвечай понятно, полезно и на языке пользователя."
+                  "Ты NOA — дружелюбный персональный AI-ассистент. " +
+                  "Отвечай понятно, полезно и на языке пользователя."
               },
               {
                 role: "user",
-                content: userMessage
+                content: userMessage.trim()
               }
-            ]
+            ],
+            max_tokens: 512
           }
         );
-  
-   const reply =
+
+        console.log("NOA AI result:", JSON.stringify(result));
+
+        const reply =
+          (typeof result === "string" ? result : null) ||
           result?.response ||
           result?.result?.response ||
-          "NOA не смог сформировать ответ.";
+          result?.choices?.[0]?.message?.content ||
+          result?.output_text ||
+          null;
 
-        return new Response(
-          JSON.stringify({
-            reply
-          }),
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
-          }
-        );
+        if (!reply || typeof reply !== "string") {
+          return json({
+            error: "Модель вернула пустой или неожиданный ответ.",
+            result: result
+          }, 502);
+        }
+
+        return json({
+          reply: reply.trim()
+        });
 
       } catch (error) {
-        return new Response(
-          JSON.stringify({
-            error: "Ошибка Workers AI: " + error.message
-          }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
-          }
-        );
+        console.error("NOA AI error:", error);
+
+        return json({
+          error: "Ошибка Workers AI.",
+          details: String(error?.message || error)
+        }, 500);
       }
     }
 
-    // Интерфейс NOA
+    if (!env.ASSETS) {
+      return new Response(
+        "NOA: ASSETS binding not found",
+        { status: 500 }
+      );
+    }
+
     return env.ASSETS.fetch(request);
   }
 };
