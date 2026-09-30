@@ -37,14 +37,15 @@ export default {
           null;
 
         if (!userMessage && Array.isArray(body.messages)) {
-          const lastMessage = body.messages
-            .filter(m => m && m.role !== "system")
-            .at(-1);
+          const messages = body.messages.filter(
+            m => m && m.role !== "system"
+          );
 
-          userMessage = lastMessage?.content ?? null;
+          userMessage = messages[messages.length - 1]?.content ?? null;
         }
 
-        if (typeof userMessage !== "string" || !userMessage.trim()) {
+        if (typeof userMessage !== "string" ||
+            !userMessage.trim()) {
           return json({
             error: "Сообщение не найдено."
           }, 400);
@@ -52,8 +53,7 @@ export default {
 
         if (!env.AI) {
           return json({
-            error: "Workers AI не подключён.",
-            hint: "Проверь Binding с именем AI."
+            error: "Workers AI не подключён. Проверь Binding AI."
           }, 500);
         }
 
@@ -64,7 +64,7 @@ export default {
               {
                 role: "system",
                 content:
-                  "Ты NOA — дружелюбный персональный AI-ассистент. " +
+                  "Ты NOA — персональный AI-ассистент. " +
                   "Отвечай понятно, полезно и на языке пользователя."
               },
               {
@@ -72,33 +72,93 @@ export default {
                 content: userMessage.trim()
               }
             ],
-            max_tokens: 512
+            max_tokens: 1024
           }
         );
 
-        console.log("NOA AI result:", JSON.stringify(result));
+        console.log("NOA result:", JSON.stringify(result));
 
-        const reply =
-          (typeof result === "string" ? result : null) ||
-          result?.response ||
-          result?.result?.response ||
-          result?.choices?.[0]?.message?.content ||
-          result?.output_text ||
-          null;
+        // Извлекаем текст из разных форматов ответа
+        function extractText(value) {
+          if (typeof value === "string") {
+            return value;
+          }
 
-        if (!reply || typeof reply !== "string") {
+          if (Array.isArray(value)) {
+            return value
+              .map(extractText)
+              .filter(Boolean)
+              .join("\n");
+          }
+
+          if (!value || typeof value !== "object") {
+            return "";
+          }
+
+          if (typeof value.response === "string") {
+            return value.response;
+          }
+
+          if (typeof value.output_text === "string") {
+            return value.output_text;
+          }
+
+          if (typeof value.text === "string") {
+            return value.text;
+          }
+
+          if (typeof value.content === "string") {
+            return value.content;
+          }
+
+          if (value.message?.content) {
+            return extractText(value.message.content);
+          }
+
+          if (value.choices?.[0]?.message?.content) {
+            return extractText(value.choices[0].message.content);
+          }
+
+          if (value.choices?.[0]?.text) {
+            return value.choices[0].text;
+          }
+
+          if (value.result) {
+            return extractText(value.result);
+          }
+
+          if (value.output) {
+            return extractText(value.output);
+          }
+
+          if (value.content) {
+            return extractText(value.content);
+          }
+
+          return "";
+        }
+
+        const reply = extractText(result).trim();
+
+        if (!reply) {
+          const keys =
+            result && typeof result === "object"
+              ? Object.keys(result).join(", ")
+              : typeof result;
+
+          console.error("Unexpected AI response:", keys);
+
           return json({
-            error: "Модель вернула пустой или неожиданный ответ.",
-            result: result
+            error:
+              "Пустой ответ модели. Поля результата: " +
+              (keys || "нет")
           }, 502);
         }
 
-        return json({
-          reply: reply.trim()
-        });
+        return json({ reply });
 
       } catch (error) {
-        console.error("NOA AI error:", error);
+        console.error("NOA error:", error);
 
         return json({
           error: "Ошибка Workers AI.",
