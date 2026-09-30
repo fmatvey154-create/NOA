@@ -2,50 +2,50 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    const corsHeaders = {
+    const headers = {
+      "Content-Type": "application/json; charset=utf-8",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Content-Type": "application/json; charset=utf-8"
+      "Access-Control-Allow-Headers": "Content-Type"
     };
 
     const json = (data, status = 200) =>
       new Response(JSON.stringify(data), {
         status,
-        headers: corsHeaders
+        headers
       });
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
-        headers: corsHeaders
+        headers
       });
     }
 
     if (url.pathname === "/api/chat") {
       if (request.method !== "POST") {
-        return json({ error: "Используй POST-запрос." }, 405);
+        return json({
+          error: "Используй POST-запрос."
+        }, 405);
       }
 
       try {
         const body = await request.json();
 
-        let userMessage =
+        const userMessage =
           body.message ??
           body.prompt ??
           body.text ??
-          null;
-
-        if (!userMessage && Array.isArray(body.messages)) {
-          const messages = body.messages.filter(
-            m => m && m.role !== "system"
+          (
+            Array.isArray(body.messages)
+              ? body.messages[body.messages.length - 1]?.content
+              : null
           );
 
-          userMessage = messages[messages.length - 1]?.content ?? null;
-        }
-
-        if (typeof userMessage !== "string" ||
-            !userMessage.trim()) {
+        if (
+          typeof userMessage !== "string" ||
+          !userMessage.trim()
+        ) {
           return json({
             error: "Сообщение не найдено."
           }, 400);
@@ -65,7 +65,7 @@ export default {
                 role: "system",
                 content:
                   "Ты NOA — персональный AI-ассистент. " +
-                  "Отвечай понятно, полезно и на языке пользователя."
+                  "Отвечай понятно, естественно и на языке пользователя."
               },
               {
                 role: "user",
@@ -76,95 +76,84 @@ export default {
           }
         );
 
-        console.log("NOA result:", JSON.stringify(result));
+        console.log(
+          "NOA RESULT:",
+          JSON.stringify(result)
+        );
 
-        // Извлекаем текст из разных форматов ответа
-        function extractText(value) {
-          if (typeof value === "string") {
-            return value;
-          }
+        /*
+         * Получаем ответ из разных возможных форматов.
+         */
 
-          if (Array.isArray(value)) {
-            return value
-              .map(extractText)
-              .filter(Boolean)
-              .join("\n");
-          }
+        let reply = "";
 
-          if (!value || typeof value !== "object") {
-            return "";
-          }
+        const choice = result?.choices?.[0];
 
-          if (typeof value.response === "string") {
-            return value.response;
-          }
-
-          if (typeof value.output_text === "string") {
-            return value.output_text;
-          }
-
-          if (typeof value.text === "string") {
-            return value.text;
-          }
-
-          if (typeof value.content === "string") {
-            return value.content;
-          }
-
-          if (value.message?.content) {
-            return extractText(value.message.content);
-          }
-
-          if (value.choices?.[0]?.message?.content) {
-            return extractText(value.choices[0].message.content);
-          }
-
-          if (value.choices?.[0]?.text) {
-            return value.choices[0].text;
-          }
-
-          if (value.result) {
-            return extractText(value.result);
-          }
-
-          if (value.output) {
-            return extractText(value.output);
-          }
-
-          if (value.content) {
-            return extractText(value.content);
-          }
-
-          return "";
+        if (typeof choice?.message?.content === "string") {
+          reply = choice.message.content;
         }
 
-        const reply =
-  result?.choices?.[0]?.message?.content ??
-  result?.choices?.[0]?.text ??
-  result?.response ??
-  result?.output_text ??
-  "";
+        if (!reply && Array.isArray(choice?.message?.content)) {
+          reply = choice.message.content
+            .map(item => {
+              if (typeof item === "string") return item;
+              return item?.text || item?.content || "";
+            })
+            .filter(Boolean)
+            .join("\n");
+        }
 
-const finalReply =
-  typeof reply === "string"
-    ? reply.trim()
-    : extractText(reply).trim();
+        if (!reply && typeof choice?.text === "string") {
+          reply = choice.text;
+        }
 
-     if (!finalReply) {
-  console.error(
-    "NOA choices:",
-    JSON.stringify(result?.choices)
-  );
+        if (!reply && typeof result?.response === "string") {
+          reply = result.response;
+        }
 
-  return json({
-    error: "Модель вернула пустой ответ.",
-    debug: JSON.stringify(result?.choices)
-  }, 502);
-} 
-        return json({ reply: finalReply });
+        if (!reply && typeof result?.output_text === "string") {
+          reply = result.output_text;
+        }
+
+        /*
+         * Иногда content может находиться глубже.
+         */
+
+        if (!reply && choice?.message) {
+          const message = choice.message;
+
+          if (typeof message.content === "object") {
+            reply = JSON.stringify(message.content);
+          }
+        }
+
+        reply = String(reply || "").trim();
+
+        if (!reply) {
+          console.error(
+            "NOA EMPTY RESPONSE:",
+            JSON.stringify(result)
+          );
+
+          return json({
+            error: "NOA получила ответ модели, но не смогла извлечь текст.",
+            debug: {
+              hasChoices: Array.isArray(result?.choices),
+              choicesCount: result?.choices?.length || 0,
+              firstChoice: result?.choices?.[0] || null
+            }
+          }, 502);
+        }
+
+        return json({
+          reply
+        });
 
       } catch (error) {
-        console.error("NOA error:", error);
+        console.error(
+          "NOA ERROR:",
+          String(error?.stack || error)
+        );
 
         return json({
           error: "Ошибка Workers AI.",
@@ -176,7 +165,12 @@ const finalReply =
     if (!env.ASSETS) {
       return new Response(
         "NOA: ASSETS binding not found",
-        { status: 500 }
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8"
+          }
+        }
       );
     }
 
