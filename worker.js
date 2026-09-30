@@ -138,9 +138,19 @@ export default {
           return "";
         }
 
-        const reply = extractText(result).trim();
+        const reply =
+  result?.choices?.[0]?.message?.content ??
+  result?.choices?.[0]?.text ??
+  result?.response ??
+  result?.output_text ??
+  "";
 
-        if (!reply) {
+const finalReply =
+  typeof reply === "string"
+    ? reply.trim()
+    : extractText(reply).trim();
+
+        if (finalReply) {
           const keys =
             result && typeof result === "object"
               ? Object.keys(result).join(", ")
@@ -155,7 +165,7 @@ export default {
           }, 502);
         }
 
-        return json({ reply });
+        return json({ reply: finalReply });
 
       } catch (error) {
         console.error("NOA error:", error);
