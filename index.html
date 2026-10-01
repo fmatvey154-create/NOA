@@ -1,453 +1,603 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-  <title>NOA</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #000;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    body {
-      display: flex;
-      justify-content: center;
-    }
-
-    .app {
-      position: relative;
-      width: 100%;
-      max-width: 900px;
-      height: 100%;
-      background: #000;
-      overflow: hidden;
-    }
-
-    /* =========================================
-       ГЛАВНЫЙ ЭКРАН
-       ========================================= */
-
-    .logo-screen {
-      position: absolute;
-      inset: 0;
-      z-index: 10;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      background: #000;
-
-      pointer-events: none;
-
-      transition:
-        transform 0.9s cubic-bezier(.22,.61,.36,1),
-        opacity 0.7s ease;
-    }
-
-    /* Никаких рамок, блоков или фонов вокруг NOA */
-    .logo {
-      display: block;
-
-      margin: 0;
-      padding: 0;
-
-      border: none;
-      outline: none;
-      box-shadow: none;
-      background: transparent;
-
-      font-size: clamp(64px, 20vw, 150px);
-      line-height: 1;
-
-      font-weight: 800;
-      letter-spacing: -0.07em;
-
-      color: #d8d8d8;
-
-      background-image: linear-gradient(
-        180deg,
-        #ffffff 0%,
-        #d7d7d7 35%,
-        #858585 65%,
-        #eeeeee 100%
-      );
-
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-
-      filter:
-        drop-shadow(0 0 12px rgba(255,255,255,.08))
-        drop-shadow(0 0 35px rgba(255,0,0,.12));
-
-      animation: logoAppear 1.2s ease forwards;
-    }
-
-    @keyframes logoAppear {
-      from {
-        opacity: 0;
-        transform: scale(.94);
-      }
-
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NOA</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+
+/* =========================
+   ГЛАВНЫЙ ЭКРАН
+   ========================= */
+
+.logo-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+
+  background: #000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-    /* После первого сообщения логотип уезжает вверх */
-    .app.started .logo-screen {
-      transform: translateY(-100%);
-      opacity: 0;
-    }
+  transition:
+    transform .9s cubic-bezier(.22,.61,.36,1),
+    opacity .7s ease;
 
-    /* Красное мягкое свечение */
-    .red-glow {
-      position: absolute;
+  pointer-events: none;
+}
 
-      width: 320px;
-      height: 320px;
+.logo {
+  margin: 0;
+  padding: 0;
 
-      left: 50%;
-      top: 50%;
+  border: none;
+  outline: none;
+  box-shadow: none;
 
-      transform: translate(-50%, -50%);
+  background: transparent;
 
-      background: radial-gradient(
-        circle,
-        rgba(255, 0, 0, .10) 0%,
-        rgba(255, 0, 0, .035) 35%,
-        transparent 70%
-      );
+  font-size: clamp(64px, 20vw, 150px);
+  line-height: 1;
 
-      pointer-events: none;
-    }
+  font-weight: 800;
+  letter-spacing: -.07em;
 
-    /* =========================================
-       ЧАТ
-       ========================================= */
+  background-image: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #d7d7d7 35%,
+    #858585 65%,
+    #eeeeee 100%
+  );
 
-    .chat {
-      position: absolute;
-      inset: 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 
-      display: flex;
-      flex-direction: column;
+  filter:
+    drop-shadow(0 0 12px rgba(255,255,255,.08))
+    drop-shadow(0 0 35px rgba(255,0,0,.12));
 
-      opacity: 0;
-      transform: translateY(20px);
+  animation: logoAppear 1.2s ease;
+}
 
-      transition:
-        opacity .7s ease,
-        transform .7s ease;
-    }
+@keyframes logoAppear {
+  from {
+    opacity: 0;
+    transform: scale(.94);
+  }
 
-    .app.started .chat {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
-    /* Верхняя панель */
-    .topbar {
-      height: 64px;
-      flex-shrink: 0;
+.app.started .logo-screen {
+  transform: translateY(-100%);
+  opacity: 0;
+}
 
-      display: flex;
-      align-items: center;
-      justify-content: center;
 
-      border-bottom: 1px solid rgba(255,255,255,.06);
+/* Красное свечение */
 
-      background: rgba(0,0,0,.82);
+.red-glow {
+  position: absolute;
 
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-    }
+  width: 320px;
+  height: 320px;
 
-    .topbar-logo {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -.04em;
+  left: 50%;
+  top: 50%;
 
-      color: #d7d7d7;
+  transform: translate(-50%, -50%);
 
-      background: linear-gradient(
-        180deg,
-        #fff,
-        #999
-      );
+  background: radial-gradient(
+    circle,
+    rgba(255,0,0,.10) 0%,
+    rgba(255,0,0,.035) 35%,
+    transparent 70%
+  );
 
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+  pointer-events: none;
+}
 
-    /* =========================================
-       СООБЩЕНИЯ
-       ========================================= */
 
-    .messages {
-      flex: 1;
+/* =========================
+   ЧАТ
+   ========================= */
 
-      overflow-y: auto;
+.chat {
+  position: absolute;
+  inset: 0;
 
-      padding: 25px 16px 125px;
+  display: flex;
+  flex-direction: column;
 
-      scroll-behavior: smooth;
-    }
+  opacity: 1;
+}
 
-    .messages::-webkit-scrollbar {
-      width: 4px;
-    }
 
-    .messages::-webkit-scrollbar-thumb {
-      background: #222;
-      border-radius: 10px;
-    }
+/* Верхняя панель */
 
-    .message {
-      width: fit-content;
-      max-width: min(82%, 650px);
+.topbar {
+  height: 64px;
+  flex-shrink: 0;
 
-      margin-bottom: 14px;
+  display: flex;
+  align-items: center;
 
-      padding: 12px 15px;
+  padding: 0 16px;
 
-      border-radius: 18px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
 
-      font-size: 16px;
-      line-height: 1.45;
+  background: rgba(0,0,0,.82);
 
-      animation: messageIn .25s ease;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
 
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
 
-    @keyframes messageIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
+/* Кнопка меню */
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+.menu-button {
+  width: 42px;
+  height: 42px;
 
-    .message.user {
-      margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-      background: #181818;
+  border: none;
+  outline: none;
 
-      border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
 
-      border-bottom-right-radius: 6px;
-    }
+  background: transparent;
+  color: white;
 
-    .message.noa {
-      margin-right: auto;
+  font-size: 27px;
 
-      background: transparent;
+  cursor: pointer;
 
-      border-bottom-left-radius: 6px;
+  transition:
+    background .2s ease,
+    transform .15s ease;
+}
 
-      color: #e7e7e7;
-    }
+.menu-button:active {
+  transform: scale(.9);
+}
 
-    .message.error {
-      color: #ff5b5b;
-    }
+.menu-button:hover {
+  background: rgba(255,255,255,.07);
+}
 
-    /* =========================================
-       ПОЛЕ ВВОДА
-       ========================================= */
 
-    .input-area {
-      position: absolute;
+/* Логотип вверху */
 
-      left: 0;
-      right: 0;
-      bottom: 0;
+.topbar-logo {
+  position: absolute;
 
-      padding:
-        12px
-        12px
-        calc(12px + env(safe-area-inset-bottom));
+  left: 50%;
 
-      background: linear-gradient(
-        to top,
-        #000 55%,
-        transparent
-      );
-    }
+  transform: translateX(-50%);
 
-    .input-box {
-      display: flex;
-      align-items: flex-end;
+  font-size: 22px;
+  font-weight: 800;
 
-      gap: 8px;
+  letter-spacing: -.04em;
 
-      padding: 8px;
+  background: linear-gradient(
+    180deg,
+    #ffffff,
+    #999999
+  );
 
-      border: 1px solid rgba(255,255,255,.09);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-      border-radius: 24px;
 
-      background: #101010;
+/* =========================
+   СООБЩЕНИЯ
+   ========================= */
 
-      box-shadow:
-        0 0 25px rgba(255,0,0,.035),
-        inset 0 0 15px rgba(255,255,255,.015);
-    }
+.messages {
+  flex: 1;
 
-    textarea {
-      flex: 1;
+  overflow-y: auto;
 
-      min-height: 42px;
-      max-height: 130px;
+  padding: 25px 16px 125px;
 
-      padding: 10px 8px;
+  scroll-behavior: smooth;
+}
 
-      resize: none;
+.messages::-webkit-scrollbar {
+  width: 4px;
+}
 
-      border: none;
-      outline: none;
+.messages::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 10px;
+}
 
-      background: transparent;
+.message {
+  width: fit-content;
+  max-width: min(82%, 650px);
 
-      color: white;
+  margin-bottom: 14px;
 
-      font-family: inherit;
-      font-size: 16px;
-      line-height: 1.4;
-    }
+  padding: 12px 15px;
 
-    textarea::placeholder {
-      color: #777;
-    }
+  border-radius: 18px;
 
-    .send {
-      width: 42px;
-      height: 42px;
+  font-size: 16px;
+  line-height: 1.45;
 
-      flex-shrink: 0;
+  animation: messageIn .25s ease;
 
-      display: flex;
-      align-items: center;
-      justify-content: center;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
 
-      border: none;
-      outline: none;
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 
-      border-radius: 50%;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-      background: #fff;
-      color: #000;
+.message.user {
+  margin-left: auto;
 
-      font-size: 19px;
-      font-weight: 700;
+  background: #181818;
 
-      cursor: pointer;
+  border: 1px solid rgba(255,255,255,.06);
 
-      transition:
-        transform .15s ease,
-        opacity .15s ease;
-    }
+  border-bottom-right-radius: 6px;
+}
 
-    .send:active {
-      transform: scale(.9);
-    }
+.message.noa {
+  margin-right: auto;
 
-    .send:disabled {
-      opacity: .35;
-    }
+  background: transparent;
 
-    /* =========================================
-       ПЕЧАТЬ NOA
-       ========================================= */
+  color: #e7e7e7;
 
-    .typing {
-      display: flex;
+  border-bottom-left-radius: 6px;
+}
 
-      gap: 5px;
+.message.error {
+  color: #ff5555;
+}
 
-      padding: 10px 4px;
-    }
 
-    .typing span {
-      width: 6px;
-      height: 6px;
+/* =========================
+   ПОЛЕ ВВОДА
+   ========================= */
 
-      border-radius: 50%;
+.input-area {
+  position: absolute;
 
-      background: #777;
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-      animation: typing 1.2s infinite ease-in-out;
-    }
+  padding:
+    12px
+    12px
+    calc(12px + env(safe-area-inset-bottom));
 
-    .typing span:nth-child(2) {
-      animation-delay: .15s;
-    }
+  background: linear-gradient(
+    to top,
+    #000 55%,
+    transparent
+  );
+}
 
-    .typing span:nth-child(3) {
-      animation-delay: .3s;
-    }
+.input-box {
+  display: flex;
+  align-items: flex-end;
 
-    @keyframes typing {
-      0%, 60%, 100% {
-        transform: translateY(0);
-        opacity: .35;
-      }
+  gap: 8px;
 
-      30% {
-        transform: translateY(-4px);
-        opacity: 1;
-      }
-    }
-  </style>
+  padding: 8px;
+
+  border: 1px solid rgba(255,255,255,.09);
+
+  border-radius: 24px;
+
+  background: #101010;
+
+  box-shadow:
+    0 0 25px rgba(255,0,0,.035),
+    inset 0 0 15px rgba(255,255,255,.015);
+}
+
+textarea {
+  flex: 1;
+
+  min-height: 42px;
+  max-height: 130px;
+
+  padding: 10px 8px;
+
+  resize: none;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: white;
+
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+textarea::placeholder {
+  color: #777;
+}
+
+
+/* Кнопка отправки */
+
+.send {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  outline: none;
+
+  border-radius: 50%;
+
+  background: white;
+  color: black;
+
+  font-size: 19px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform .15s ease,
+    opacity .15s ease;
+}
+
+.send:active {
+  transform: scale(.9);
+}
+
+.send:disabled {
+  opacity: .35;
+}
+
+
+/* =========================
+   ПЕЧАТЬ NOA
+   ========================= */
+
+.typing {
+  display: flex;
+
+  gap: 5px;
+
+  padding: 10px 4px;
+}
+
+.typing span {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #777;
+
+  animation: typing 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: .15s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: .3s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: .35;
+  }
+
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+
+/* =========================
+   МЕНЮ
+   ========================= */
+
+.side-menu {
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  z-index: 30;
+
+  width: 280px;
+  height: 100%;
+
+  background: #090909;
+
+  border-right: 1px solid rgba(255,255,255,.08);
+
+  transform: translateX(-100%);
+
+  transition: transform .3s ease;
+
+  box-shadow: 10px 0 40px rgba(0,0,0,.5);
+}
+
+.side-menu.open {
+  transform: translateX(0);
+}
+
+.menu-title {
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 20px;
+
+  font-size: 22px;
+  font-weight: 800;
+
+  color: #ddd;
+
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.menu-item {
+  padding: 18px 20px;
+
+  color: #bbb;
+
+  font-size: 16px;
+
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+
+
+/* Затемнение */
+
+.overlay {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 20;
+
+  background: rgba(0,0,0,.55);
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity .3s ease;
+}
+
+.overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+</style>
 </head>
+
 
 <body>
 
 <div class="app" id="app">
 
-  <!-- ЧИСТЫЙ ГЛАВНЫЙ ЭКРАН -->
+
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+
   <div class="logo-screen">
 
     <div class="red-glow"></div>
 
-    <div class="logo">NOA</div>
+    <div class="logo">
+      NOA
+    </div>
 
   </div>
 
 
   <!-- ЧАТ -->
+
   <div class="chat">
 
+
+    <!-- ВЕРХ -->
+
     <div class="topbar">
-      <div class="topbar-logo">NOA</div>
+
+      <button
+        class="menu-button"
+        id="menuButton"
+        type="button"
+      >
+        ☰
+      </button>
+
+      <div class="topbar-logo">
+        NOA
+      </div>
+
     </div>
 
 
-    <div class="messages" id="messages"></div>
+    <!-- СООБЩЕНИЯ -->
 
+    <div
+      class="messages"
+      id="messages"
+    ></div>
+
+
+    <!-- ВВОД -->
 
     <div class="input-area">
 
@@ -455,8 +605,8 @@
 
         <textarea
           id="input"
-          placeholder="Напишите сообщение..."
           rows="1"
+          placeholder="Напишите сообщение..."
         ></textarea>
 
         <button
@@ -473,137 +623,200 @@
 
   </div>
 
+
+  <!-- МЕНЮ -->
+
+  <div
+    class="overlay"
+    id="overlay"
+  ></div>
+
+
+  <div
+    class="side-menu"
+    id="sideMenu"
+  >
+
+    <div class="menu-title">
+      NOA
+    </div>
+
+    <div class="menu-item">
+      Новый чат
+    </div>
+
+    <div class="menu-item">
+      История
+    </div>
+
+    <div class="menu-item">
+      Настройки
+    </div>
+
+  </div>
+
 </div>
 
 
 <script>
 
-  const app = document.getElementById("app");
+const app =
+  document.getElementById("app");
 
-  const messages =
-    document.getElementById("messages");
+const messages =
+  document.getElementById("messages");
 
-  const input =
-    document.getElementById("input");
+const input =
+  document.getElementById("input");
 
-  const send =
-    document.getElementById("send");
+const send =
+  document.getElementById("send");
+
+const menuButton =
+  document.getElementById("menuButton");
+
+const sideMenu =
+  document.getElementById("sideMenu");
+
+const overlay =
+  document.getElementById("overlay");
 
 
-  let started = false;
-  let waiting = false;
+let started = false;
+let waiting = false;
 
 
-  function startNOA() {
+/* =========================
+   СТАРТ NOA
+   ========================= */
 
-    if (!started) {
+function startNOA() {
 
-      started = true;
+  if (!started) {
 
-      app.classList.add("started");
+    started = true;
 
-    }
+    app.classList.add("started");
+
+  }
+
+}
+
+
+/* =========================
+   ДОБАВЛЕНИЕ СООБЩЕНИЯ
+   ========================= */
+
+function addMessage(text, type) {
+
+  const message =
+    document.createElement("div");
+
+  message.className =
+    "message " + type;
+
+  message.textContent =
+    text;
+
+  messages.appendChild(message);
+
+  messages.scrollTop =
+    messages.scrollHeight;
+
+}
+
+
+/* =========================
+   ПЕЧАТЬ
+   ========================= */
+
+function addTyping() {
+
+  const message =
+    document.createElement("div");
+
+  message.className =
+    "message noa";
+
+  message.id =
+    "typing";
+
+  message.innerHTML = `
+    <div class="typing">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  `;
+
+  messages.appendChild(message);
+
+  messages.scrollTop =
+    messages.scrollHeight;
+
+}
+
+
+function removeTyping() {
+
+  const typing =
+    document.getElementById("typing");
+
+  if (typing) {
+
+    typing.remove();
+
+  }
+
+}
+
+
+/* =========================
+   ОТПРАВКА
+   ========================= */
+
+async function sendMessage() {
+
+  const text =
+    input.value.trim();
+
+
+  if (!text || waiting) {
+
+    return;
 
   }
 
 
-  function addMessage(text, type) {
-
-    const message =
-      document.createElement("div");
-
-    message.className =
-      "message " + type;
-
-    message.textContent = text;
-
-    messages.appendChild(message);
-
-    messages.scrollTop =
-      messages.scrollHeight;
-
-    return message;
-
-  }
+  startNOA();
 
 
-  function addTyping() {
-
-    const message =
-      document.createElement("div");
-
-    message.className =
-      "message noa";
-
-    message.id = "typing";
-
-    message.innerHTML = `
-      <div class="typing">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-    `;
-
-    messages.appendChild(message);
-
-    messages.scrollTop =
-      messages.scrollHeight;
-
-  }
+  addMessage(
+    text,
+    "user"
+  );
 
 
-  function removeTyping() {
+  input.value = "";
 
-    const typing =
-      document.getElementById("typing");
-
-    if (typing) {
-
-      typing.remove();
-
-    }
-
-  }
+  input.style.height =
+    "42px";
 
 
-  async function sendMessage() {
+  waiting = true;
 
-    const text =
-      input.value.trim();
-
-
-    if (!text || waiting) {
-
-      return;
-
-    }
+  send.disabled = true;
 
 
-    startNOA();
+  addTyping();
 
 
-    addMessage(text, "user");
+  try {
 
-
-    input.value = "";
-
-    input.style.height = "42px";
-
-
-    waiting = true;
-
-    send.disabled = true;
-
-
-    addTyping();
-
-
-    try {
-
-      const response =
-        await fetch("/api/chat", {
-
+    const response =
+      await fetch(
+        "/api/chat",
+        {
           method: "POST",
 
           headers: {
@@ -614,113 +827,161 @@
           body: JSON.stringify({
             message: text
           })
-
-        });
-
-
-      removeTyping();
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          "Server error"
-        );
-
-      }
-
-
-      const data =
-        await response.json();
-
-
-      const answer =
-        data.reply ||
-        data.response ||
-        data.message ||
-        data.text;
-
-
-      if (!answer) {
-
-        throw new Error(
-          "Empty response"
-        );
-
-      }
-
-
-      addMessage(
-        answer,
-        "noa"
+        }
       );
 
 
-    } catch (error) {
-
-      removeTyping();
+    removeTyping();
 
 
-      addMessage(
-        "NOA не смог сформировать ответ.",
-        "noa error"
+    if (!response.ok) {
+
+      throw new Error(
+        "Server error"
       );
-
-
-      console.error(error);
-
-    } finally {
-
-      waiting = false;
-
-      send.disabled = false;
-
-      input.focus();
 
     }
+
+
+    const data =
+      await response.json();
+
+
+    const answer =
+      data.reply ||
+      data.response ||
+      data.message ||
+      data.text;
+
+
+    if (!answer) {
+
+      throw new Error(
+        "Empty response"
+      );
+
+    }
+
+
+    addMessage(
+      answer,
+      "noa"
+    );
+
+
+  } catch (error) {
+
+    removeTyping();
+
+
+    addMessage(
+      "NOA не смог сформировать ответ.",
+      "noa error"
+    );
+
+
+    console.error(error);
 
   }
 
 
-  send.addEventListener(
-    "click",
-    sendMessage
-  );
+  waiting = false;
+
+  send.disabled = false;
+
+  input.focus();
+
+}
 
 
-  input.addEventListener(
-    "keydown",
-    function(event) {
+/* =========================
+   КНОПКИ
+   ========================= */
 
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-
-        event.preventDefault();
-
-        sendMessage();
-
-      }
-
-    }
-  );
+send.addEventListener(
+  "click",
+  sendMessage
+);
 
 
-  input.addEventListener(
-    "input",
-    function() {
+input.addEventListener(
+  "keydown",
+  function(event) {
 
-      this.style.height = "42px";
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
 
-      this.style.height =
-        Math.min(
-          this.scrollHeight,
-          130
-        ) + "px";
+      event.preventDefault();
+
+      sendMessage();
 
     }
+
+  }
+);
+
+
+/* Автоматический размер поля */
+
+input.addEventListener(
+  "input",
+  function() {
+
+    this.style.height =
+      "42px";
+
+    this.style.height =
+      Math.min(
+        this.scrollHeight,
+        130
+      ) + "px";
+
+  }
+);
+
+
+/* =========================
+   МЕНЮ
+   ========================= */
+
+function openMenu() {
+
+  sideMenu.classList.add(
+    "open"
   );
+
+  overlay.classList.add(
+    "open"
+  );
+
+}
+
+
+function closeMenu() {
+
+  sideMenu.classList.remove(
+    "open"
+  );
+
+  overlay.classList.remove(
+    "open"
+  );
+
+}
+
+
+menuButton.addEventListener(
+  "click",
+  openMenu
+);
+
+
+overlay.addEventListener(
+  "click",
+  closeMenu
+);
 
 </script>
 
