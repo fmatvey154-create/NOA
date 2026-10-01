@@ -2,59 +2,21 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    const headers = {
-      "Content-Type": "application/json; charset=utf-8",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type"
-    };
-
-    const json = (data, status = 200) =>
-      new Response(JSON.stringify(data), {
-        status,
-        headers
-      });
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers
-      });
+    // Главная страница
+    if (request.method === "GET" && url.pathname === "/") {
+      return env.ASSETS.fetch(request);
     }
 
-    if (url.pathname === "/api/chat") {
-      if (request.method !== "POST") {
-        return json({
-          error: "Используй POST-запрос."
-        }, 405);
-      }
-
+    // API NOA
+    if (request.method === "POST" && url.pathname === "/api/chat") {
       try {
         const body = await request.json();
+        const message = body?.message?.trim();
 
-        const userMessage =
-          body.message ??
-          body.prompt ??
-          body.text ??
-          (
-            Array.isArray(body.messages)
-              ? body.messages[body.messages.length - 1]?.content
-              : null
-          );
-
-        if (
-          typeof userMessage !== "string" ||
-          !userMessage.trim()
-        ) {
+        if (!message) {
           return json({
-            error: "Сообщение не найдено."
-          }, 400);
-        }
-
-        if (!env.AI) {
-          return json({
-            error: "Workers AI не подключён. Проверь Binding AI."
-          }, 500);
+            reply: "Напиши сообщение, и NOA ответит."
+          });
         }
 
         const result = await env.AI.run(
@@ -64,116 +26,79 @@ export default {
               {
                 role: "system",
                 content:
-                  "Ты NOA — персональный AI-ассистент. " +
-                  "Отвечай понятно, естественно и на языке пользователя."
+                  "Ты — NOA, дружелюбный и умный персональный AI-ассистент. Отвечай естественно, понятно и по существу. Не упоминай внутренние технические детали."
               },
               {
                 role: "user",
-                content: userMessage.trim()
+                content: message
               }
-            ],
-            max_tokens: 1024
+            ]
           }
         );
 
-        console.log(
-          "NOA RESULT:",
-          JSON.stringify(result)
-        );
+        // Пытаемся получить текст из разных возможных форматов ответа
+        let reply = null;
 
-        /*
-         * Получаем ответ из разных возможных форматов.
-         */
-
-        let reply = "";
-
-        const choice = result?.choices?.[0];
-
-        if (typeof choice?.message?.content === "string") {
-          reply = choice.message.content;
-        }
-
-        if (!reply && Array.isArray(choice?.message?.content)) {
-          reply = choice.message.content
-            .map(item => {
-              if (typeof item === "string") return item;
-              return item?.text || item?.content || "";
-            })
-            .filter(Boolean)
-            .join("\n");
-        }
-
-        if (!reply && typeof choice?.text === "string") {
-          reply = choice.text;
+        if (typeof result === "string") {
+          reply = result;
         }
 
         if (!reply && typeof result?.response === "string") {
           reply = result.response;
         }
 
+        if (!reply && typeof result?.result?.response === "string") {
+          reply = result.result.response;
+        }
+
         if (!reply && typeof result?.output_text === "string") {
           reply = result.output_text;
         }
 
-        /*
-         * Иногда content может находиться глубже.
-         */
+        if (!reply && Array.isArray(result?.choices)) {
+          const choice = result.choices[0];
 
-        if (!reply && choice?.message) {
-          const message = choice.message;
+          if (typeof choice?.message?.content === "string") {
+            reply = choice.message.content;
+          }
 
-          if (typeof message.content === "object") {
-            reply = JSON.stringify(message.content);
+          if (!reply && typeof choice?.text === "string") {
+            reply = choice.text;
           }
         }
 
-        reply = String(reply || "").trim();
-
-        if (!reply) {
-          console.error(
-            "NOA EMPTY RESPONSE:",
-            JSON.stringify(result)
-          );
+        if (!reply || !reply.trim() || reply.trim() === "null") {
+          console.error("NOA: пустой ответ модели", result);
 
           return json({
-            error: "NOA получила ответ модели, но не смогла извлечь текст.",
-            debug: {
-              hasChoices: Array.isArray(result?.choices),
-              choicesCount: result?.choices?.length || 0,
-              firstChoice: result?.choices?.[0] || null
-            }
-          }, 502);
+            reply:
+              "NOA не получила текстовый ответ от модели. Попробуй отправить сообщение ещё раз."
+          });
         }
 
         return json({
-          reply
+          reply: reply.trim()
         });
 
       } catch (error) {
-        console.error(
-          "NOA ERROR:",
-          String(error?.stack || error)
-        );
+        console.error("NOA API error:", error);
 
         return json({
-          error: "Ошибка Workers AI.",
-          details: String(error?.message || error)
-        }, 500);
+          reply:
+            "У NOA возникла небольшая ошибка. Попробуй отправить сообщение ещё раз."
+        });
       }
     }
 
-    if (!env.ASSETS) {
-      return new Response(
-        "NOA: ASSETS binding not found",
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8"
-          }
-        }
-      );
-    }
-
-    return env.ASSETS.fetch(request);
+    return new Response("Not Found", { status: 404 });
   }
 };
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8"
+    }
+  });
+}
