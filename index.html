@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -67,7 +66,9 @@ button, textarea {
   outline: none;
   box-shadow: none;
 
-  font-size: clamp(76px, 20vw, 150px);
+  /* Логотип увеличен примерно в 1.5 раза */
+  font-size: clamp(114px, 30vw, 225px);
+
   font-weight: 800;
   letter-spacing: -.075em;
   line-height: 1;
@@ -84,34 +85,20 @@ button, textarea {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 
-  filter: drop-shadow(0 0 28px rgba(255,0,0,.12));
+  /* Красное свечение полностью убрано */
+  filter: none;
 
   animation: appear 1s ease both;
 }
 
-.red-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-
-  width: min(85vw, 380px);
-  aspect-ratio: 1;
-
-  transform: translate(-50%, -50%);
-
-  background: radial-gradient(
-    circle,
-    rgba(180,0,0,.12),
-    rgba(100,0,0,.035) 45%,
-    transparent 72%
-  );
-}
+/* Красного свечения больше нет */
 
 @keyframes appear {
   from {
     opacity: 0;
     transform: scale(.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -136,7 +123,7 @@ button, textarea {
   background: transparent;
 }
 
-/* Верхняя панель */
+/* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
 
 .topbar {
   position: relative;
@@ -191,7 +178,7 @@ button, textarea {
   -webkit-text-fill-color: transparent;
 }
 
-/* Сообщения */
+/* ===== СООБЩЕНИЯ ===== */
 
 .messages {
   flex: 1;
@@ -229,6 +216,7 @@ button, textarea {
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -278,18 +266,226 @@ button, textarea {
 }
 
 .input-box {
+  position: relative;
+
   display: flex;
   align-items: flex-end;
   gap: 8px;
 
   width: 100%;
-  padding: 7px 8px 7px 14px;
+  padding: 7px 8px 7px 8px;
 
   background: #111;
   border: 1px solid #292929;
   border-radius: 25px;
 
-  box-shadow: 0 0 22px rgba(255,0,0,.035);
+  box-shadow: 0 0 22px rgba(255,255,255,.025);
+}
+
+/* ===== КНОПКА ВЛОЖЕНИЙ ===== */
+
+.attachment-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.attachment-button {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  padding: 0;
+
+  color: #ddd;
+  background: transparent;
+
+  border: none;
+  border-radius: 50%;
+
+  overflow: hidden;
+
+  cursor: pointer;
+}
+
+.attachment-button:active {
+  background: #202020;
+  transform: scale(.93);
+}
+
+.attachment-icon {
+  position: absolute;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  font-size: 21px;
+  line-height: 1;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+/*
+  Каждый значок:
+  - появляется
+  - находится на месте 2 секунды
+  - уходит вниз с наклоном влево
+*/
+
+.attachment-icon.photo {
+  animation: attachmentPhoto 6.4s infinite;
+}
+
+.attachment-icon.file {
+  animation: attachmentFile 6.4s infinite;
+  animation-delay: 3.2s;
+}
+
+@keyframes attachmentPhoto {
+  0% {
+    opacity: 0;
+    transform: translateY(-13px) rotate(0deg);
+  }
+
+  9.375% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+
+  40.625% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    opacity: 0;
+    transform: translateY(17px) rotate(-18deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(17px) rotate(-18deg);
+  }
+}
+
+@keyframes attachmentFile {
+  0% {
+    opacity: 0;
+    transform: translateY(-13px) rotate(0deg);
+  }
+
+  9.375% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+
+  40.625% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    opacity: 0;
+    transform: translateY(17px) rotate(-18deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(17px) rotate(-18deg);
+  }
+}
+
+/* ===== МЕНЮ ВЛОЖЕНИЙ ===== */
+
+.attachment-menu {
+  position: absolute;
+
+  left: 0;
+  bottom: 52px;
+
+  width: 185px;
+
+  padding: 7px;
+
+  background: rgba(22,22,22,.98);
+  border: 1px solid #303030;
+  border-radius: 17px;
+
+  box-shadow:
+    0 14px 40px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,255,255,.02);
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px) scale(.96);
+  transform-origin: bottom left;
+
+  transition:
+    opacity .2s ease,
+    transform .2s ease,
+    visibility .2s ease;
+
+  z-index: 50;
+}
+
+.attachment-menu.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.attachment-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+  min-height: 46px;
+
+  padding: 9px 11px;
+
+  color: #eee;
+  background: transparent;
+
+  border: none;
+  border-radius: 11px;
+
+  text-align: left;
+  font-size: 15px;
+
+  cursor: pointer;
+}
+
+.attachment-option:active {
+  background: #292929;
+}
+
+.attachment-option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 27px;
+  height: 27px;
+
+  font-size: 20px;
+}
+
+/* Скрытые системные input */
+
+.hidden-file-input {
+  display: none;
 }
 
 textarea {
@@ -380,6 +576,7 @@ textarea::placeholder {
     opacity: .35;
     transform: translateY(0);
   }
+
   30% {
     opacity: 1;
     transform: translateY(-4px);
@@ -508,7 +705,6 @@ textarea::placeholder {
   <!-- Стартовый экран -->
 
   <div class="logo-screen">
-    <div class="red-glow"></div>
     <div class="logo">NOA</div>
   </div>
 
@@ -534,7 +730,84 @@ textarea::placeholder {
     ></div>
 
     <form class="input-area" id="chatForm">
+
       <div class="input-box">
+
+        <!-- КНОПКА ВЛОЖЕНИЙ -->
+
+        <div class="attachment-wrapper">
+
+          <button
+            class="attachment-button"
+            id="attachmentButton"
+            type="button"
+            aria-label="Вложения"
+            aria-expanded="false"
+          >
+            <span class="attachment-icon photo">🖼️</span>
+            <span class="attachment-icon file">📁</span>
+          </button>
+
+          <!-- Меню вложений -->
+
+          <div
+            class="attachment-menu"
+            id="attachmentMenu"
+          >
+
+            <button
+              class="attachment-option"
+              id="photoOption"
+              type="button"
+            >
+              <span class="attachment-option-icon">🖼️</span>
+              <span>Фото</span>
+            </button>
+
+            <button
+              class="attachment-option"
+              id="cameraOption"
+              type="button"
+            >
+              <span class="attachment-option-icon">📷</span>
+              <span>Камера</span>
+            </button>
+
+            <button
+              class="attachment-option"
+              id="fileOption"
+              type="button"
+            >
+              <span class="attachment-option-icon">📄</span>
+              <span>Файл</span>
+            </button>
+
+          </div>
+
+          <!-- Реальные системные выборы -->
+
+          <input
+            class="hidden-file-input"
+            id="photoInput"
+            type="file"
+            accept="image/*"
+          >
+
+          <input
+            class="hidden-file-input"
+            id="cameraInput"
+            type="file"
+            accept="image/*"
+            capture="environment"
+          >
+
+          <input
+            class="hidden-file-input"
+            id="fileInput"
+            type="file"
+          >
+
+        </div>
 
         <textarea
           id="input"
@@ -551,6 +824,7 @@ textarea::placeholder {
         >↑</button>
 
       </div>
+
     </form>
 
   </main>
@@ -595,8 +869,36 @@ const chatForm = document.getElementById("chatForm");
 const sideMenu = document.getElementById("sideMenu");
 const overlay = document.getElementById("overlay");
 
+/* ===== ВЛОЖЕНИЯ ===== */
+
+const attachmentButton =
+  document.getElementById("attachmentButton");
+
+const attachmentMenu =
+  document.getElementById("attachmentMenu");
+
+const photoOption =
+  document.getElementById("photoOption");
+
+const cameraOption =
+  document.getElementById("cameraOption");
+
+const fileOption =
+  document.getElementById("fileOption");
+
+const photoInput =
+  document.getElementById("photoInput");
+
+const cameraInput =
+  document.getElementById("cameraInput");
+
+const fileInput =
+  document.getElementById("fileInput");
+
 let started = false;
 let waiting = false;
+
+/* ===== СТАРТ NOA ===== */
 
 function startNOA() {
   if (!started) {
@@ -604,6 +906,8 @@ function startNOA() {
     app.classList.add("started");
   }
 }
+
+/* ===== СООБЩЕНИЯ ===== */
 
 function addMessage(text, type) {
   const el = document.createElement("div");
@@ -636,6 +940,8 @@ function removeTyping() {
   document.getElementById("typing")?.remove();
 }
 
+/* ===== БОКОВОЕ МЕНЮ ===== */
+
 function openMenu() {
   sideMenu.classList.add("open");
   overlay.classList.add("open");
@@ -645,6 +951,106 @@ function closeMenu() {
   sideMenu.classList.remove("open");
   overlay.classList.remove("open");
 }
+
+/* ===== МЕНЮ ВЛОЖЕНИЙ ===== */
+
+function openAttachmentMenu() {
+  attachmentMenu.classList.add("open");
+  attachmentButton.setAttribute("aria-expanded", "true");
+}
+
+function closeAttachmentMenu() {
+  attachmentMenu.classList.remove("open");
+  attachmentButton.setAttribute("aria-expanded", "false");
+}
+
+function toggleAttachmentMenu() {
+  if (attachmentMenu.classList.contains("open")) {
+    closeAttachmentMenu();
+  } else {
+    openAttachmentMenu();
+  }
+}
+
+attachmentButton.addEventListener(
+  "click",
+  (event) => {
+    event.stopPropagation();
+    toggleAttachmentMenu();
+  }
+);
+
+/* ===== ВЫБОР ФОТО ===== */
+
+photoOption.addEventListener("click", () => {
+  closeAttachmentMenu();
+  photoInput.click();
+});
+
+/* ===== КАМЕРА ===== */
+
+cameraOption.addEventListener("click", () => {
+  closeAttachmentMenu();
+  cameraInput.click();
+});
+
+/* ===== ФАЙЛ ===== */
+
+fileOption.addEventListener("click", () => {
+  closeAttachmentMenu();
+  fileInput.click();
+});
+
+/* ===== ПОСЛЕ ВЫБОРА ФАЙЛА ===== */
+
+photoInput.addEventListener("change", () => {
+  if (photoInput.files.length > 0) {
+    handleAttachment(photoInput.files[0]);
+  }
+});
+
+cameraInput.addEventListener("change", () => {
+  if (cameraInput.files.length > 0) {
+    handleAttachment(cameraInput.files[0]);
+  }
+});
+
+fileInput.addEventListener("change", () => {
+  if (fileInput.files.length > 0) {
+    handleAttachment(fileInput.files[0]);
+  }
+});
+
+/*
+  Пока файл только выбирается.
+  Следующим этапом подключим его к /api/chat,
+  чтобы NOA реально мог анализировать изображение
+  или читать загруженный файл.
+*/
+
+function handleAttachment(file) {
+  console.log(
+    "Выбран файл:",
+    file.name,
+    file.type,
+    file.size
+  );
+
+  input.focus();
+}
+
+/* ===== ЗАКРЫТИЕ МЕНЮ ПРИ КЛИКЕ СНАРУЖИ ===== */
+
+document.addEventListener("click", (event) => {
+  if (
+    !attachmentMenu.contains(event.target) &&
+    !attachmentButton.contains(event.target)
+  ) {
+    closeAttachmentMenu();
+  }
+});
+
+/* ===== БОКОВОЕ МЕНЮ ===== */
 
 document.getElementById("menuButton")
   .addEventListener("click", openMenu);
@@ -657,11 +1063,17 @@ overlay.addEventListener("click", closeMenu);
 document.getElementById("newChat")
   .addEventListener("click", () => {
     messages.replaceChildren();
+
     input.value = "";
     input.style.height = "42px";
+
     closeMenu();
+    closeAttachmentMenu();
+
     input.focus();
   });
+
+/* ===== ОТПРАВКА ===== */
 
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -672,6 +1084,7 @@ chatForm.addEventListener("submit", async (event) => {
 
   startNOA();
   closeMenu();
+  closeAttachmentMenu();
 
   addMessage(text, "user");
 
@@ -686,9 +1099,11 @@ chatForm.addEventListener("submit", async (event) => {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json"
       },
+
       body: JSON.stringify({
         message: text
       })
@@ -706,14 +1121,19 @@ chatForm.addEventListener("submit", async (event) => {
       data.message ??
       data.text;
 
-    if (typeof answer !== "string" || !answer.trim()) {
+    if (
+      typeof answer !== "string" ||
+      !answer.trim()
+    ) {
       throw new Error("Пустой ответ сервера");
     }
 
     removeTyping();
+
     addMessage(answer, "noa");
 
   } catch (error) {
+
     removeTyping();
 
     addMessage(
@@ -724,22 +1144,39 @@ chatForm.addEventListener("submit", async (event) => {
     console.error("NOA error:", error);
 
   } finally {
+
     waiting = false;
     send.disabled = false;
+
   }
 });
+
+/* ===== АВТОРАЗМЕР TEXTAREA ===== */
 
 input.addEventListener("input", () => {
+
   input.style.height = "42px";
+
   input.style.height =
     Math.min(input.scrollHeight, 130) + "px";
+
 });
 
+/* ===== ENTER ===== */
+
 input.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
+
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey
+  ) {
+
     event.preventDefault();
+
     chatForm.requestSubmit();
+
   }
+
 });
 </script>
 
