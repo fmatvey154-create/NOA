@@ -276,6 +276,83 @@ button, textarea {
   );
 }
 
+/* ===== ПРЕВЬЮ ВЛОЖЕНИЯ ===== */
+
+.pending-attachment {
+  display: none;
+
+  width: 100%;
+
+  padding: 0 8px 8px;
+}
+
+.pending-attachment.open {
+  display: block;
+}
+
+.pending-image-card {
+  position: relative;
+
+  display: inline-block;
+
+  width: 76px;
+  height: 76px;
+
+  border-radius: 15px;
+
+  overflow: visible;
+}
+
+.pending-image {
+  display: block;
+
+  width: 76px;
+  height: 76px;
+
+  object-fit: cover;
+
+  border-radius: 15px;
+
+  border: 1px solid rgba(255,255,255,.12);
+
+  background: #151515;
+}
+
+.remove-pending-image {
+  position: absolute;
+
+  top: -8px;
+  right: -8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 25px;
+  height: 25px;
+
+  padding: 0;
+
+  color: #fff;
+  background: #292929;
+
+  border: 1px solid #444;
+  border-radius: 50%;
+
+  font-size: 17px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 12px rgba(0,0,0,.5);
+}
+
+.remove-pending-image:active {
+  transform: scale(.9);
+}
+
+/* ===== INPUT BOX ===== */
+
 .input-box {
   position: relative;
 
@@ -327,6 +404,10 @@ button, textarea {
 .attachment-button:active {
   background: #202020;
   transform: scale(.93);
+}
+
+.attachment-button:disabled {
+  opacity: .4;
 }
 
 .attachment-icon {
@@ -747,6 +828,13 @@ textarea::placeholder {
       id="chatForm"
     >
 
+      <!-- ПРЕВЬЮ ПРИКРЕПЛЁННОГО ФОТО -->
+
+      <div
+        class="pending-attachment"
+        id="pendingAttachment"
+      ></div>
+
       <div class="input-box">
 
         <!-- ВЛОЖЕНИЯ -->
@@ -830,6 +918,7 @@ textarea::placeholder {
             class="hidden-file-input"
             id="fileInput"
             type="file"
+            accept="image/*"
           >
 
         </div>
@@ -906,14 +995,26 @@ textarea::placeholder {
 </div>
 
 <script>
-const app = document.getElementById("app");
-const messages = document.getElementById("messages");
-const input = document.getElementById("input");
-const send = document.getElementById("send");
-const chatForm = document.getElementById("chatForm");
+const app =
+  document.getElementById("app");
 
-const sideMenu = document.getElementById("sideMenu");
-const overlay = document.getElementById("overlay");
+const messages =
+  document.getElementById("messages");
+
+const input =
+  document.getElementById("input");
+
+const send =
+  document.getElementById("send");
+
+const chatForm =
+  document.getElementById("chatForm");
+
+const sideMenu =
+  document.getElementById("sideMenu");
+
+const overlay =
+  document.getElementById("overlay");
 
 const attachmentButton =
   document.getElementById("attachmentButton");
@@ -939,8 +1040,19 @@ const cameraInput =
 const fileInput =
   document.getElementById("fileInput");
 
+const pendingAttachment =
+  document.getElementById("pendingAttachment");
+
+
 let started = false;
 let waiting = false;
+
+
+/* ===== ТЕКУЩЕЕ ВЛОЖЕНИЕ ===== */
+
+let pendingImageFile = null;
+let pendingImageData = null;
+let pendingImageUrl = null;
 
 
 /* ===== СТАРТ ===== */
@@ -968,7 +1080,8 @@ function addMessage(text, type) {
   el.className =
     "message " + type;
 
-  el.textContent = text;
+  el.textContent =
+    text;
 
   messages.appendChild(el);
 
@@ -982,13 +1095,17 @@ function addMessage(text, type) {
 
 /* ===== КАРТИНКА В ЧАТЕ ===== */
 
-function addImageMessage(imageUrl, text) {
+function addImageMessage(
+  imageUrl,
+  text
+) {
 
   const el =
     document.createElement("div");
 
   el.className =
     "message user";
+
 
   const image =
     document.createElement("img");
@@ -1000,6 +1117,7 @@ function addImageMessage(imageUrl, text) {
     imageUrl;
 
   el.appendChild(image);
+
 
   if (text) {
 
@@ -1015,6 +1133,7 @@ function addImageMessage(imageUrl, text) {
     el.appendChild(caption);
 
   }
+
 
   messages.appendChild(el);
 
@@ -1087,11 +1206,10 @@ function openAttachmentMenu() {
 
   attachmentMenu.classList.add("open");
 
-  attachmentButton
-    .setAttribute(
-      "aria-expanded",
-      "true"
-    );
+  attachmentButton.setAttribute(
+    "aria-expanded",
+    "true"
+  );
 
 }
 
@@ -1100,11 +1218,10 @@ function closeAttachmentMenu() {
 
   attachmentMenu.classList.remove("open");
 
-  attachmentButton
-    .setAttribute(
-      "aria-expanded",
-      "false"
-    );
+  attachmentButton.setAttribute(
+    "aria-expanded",
+    "false"
+  );
 
 }
 
@@ -1173,7 +1290,7 @@ fileOption.addEventListener(
 );
 
 
-/* ===== ФОТО INPUT ===== */
+/* ===== INPUT ФОТО ===== */
 
 photoInput.addEventListener(
   "change",
@@ -1196,7 +1313,7 @@ photoInput.addEventListener(
 );
 
 
-/* ===== КАМЕРА INPUT ===== */
+/* ===== INPUT КАМЕРА ===== */
 
 cameraInput.addEventListener(
   "change",
@@ -1219,7 +1336,7 @@ cameraInput.addEventListener(
 );
 
 
-/* ===== ФАЙЛ INPUT ===== */
+/* ===== INPUT ФАЙЛ ===== */
 
 fileInput.addEventListener(
   "change",
@@ -1242,19 +1359,26 @@ fileInput.addEventListener(
 );
 
 
-/* ===== ОТПРАВКА ФОТО ===== */
+/* ===== ПРИКРЕПИТЬ ФОТО ===== */
 
 async function handleAttachment(file) {
 
-  if (waiting || !file) return;
+  if (
+    waiting ||
+    !file
+  ) {
+    return;
+  }
 
 
-  /* Сейчас NOA анализирует изображения */
+  /* Только изображения */
 
-  if (!file.type.startsWith("image/")) {
+  if (
+    !file.type.startsWith("image/")
+  ) {
 
     addMessage(
-      "Пока NOA умеет анализировать изображения. Поддержка других файлов появится позже.",
+      "Пока NOA умеет анализировать только изображения.",
       "noa"
     );
 
@@ -1280,143 +1404,109 @@ async function handleAttachment(file) {
   }
 
 
-  startNOA();
+  /* Удаляем старое вложение */
 
-  closeMenu();
-
-  closeAttachmentMenu();
+  removePendingImage();
 
 
-  const imageUrl =
+  pendingImageFile =
+    file;
+
+
+  /* Создаём превью */
+
+  pendingImageUrl =
     URL.createObjectURL(file);
 
-  const text =
-    input.value.trim();
+
+  pendingAttachment.innerHTML = `
+    <div class="pending-image-card">
+
+      <img
+        class="pending-image"
+        src="${pendingImageUrl}"
+        alt="Прикреплённое изображение"
+      >
+
+      <button
+        class="remove-pending-image"
+        id="removePendingImage"
+        type="button"
+        aria-label="Удалить изображение"
+      >×</button>
+
+    </div>
+  `;
 
 
-  /* Показываем фото пользователя */
-
-  addImageMessage(
-    imageUrl,
-    text
-  );
+  pendingAttachment.classList.add("open");
 
 
-  waiting = true;
+  document
+    .getElementById("removePendingImage")
+    .addEventListener(
+      "click",
+      removePendingImage
+    );
 
-  send.disabled = true;
 
-  attachmentButton.disabled = true;
-
-  showTyping();
-
+  /* Читаем изображение,
+     но НЕ отправляем */
 
   try {
 
-    const imageData =
+    pendingImageData =
       await fileToDataURL(file);
-
-
-    const response =
-      await fetch(
-        "/api/chat",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            message:
-              text ||
-              "Что изображено на этом фото? Опиши его и ответь на мой запрос по изображению.",
-
-            image:
-              imageData
-
-          })
-
-        }
-      );
-
-
-    let data;
-
-
-    try {
-
-      data =
-        await response.json();
-
-    } catch {
-
-      throw new Error(
-        "Сервер вернул неправильный ответ."
-      );
-
-    }
-
-
-    removeTyping();
-
-
-    if (
-      !response.ok ||
-      !data ||
-      !data.reply
-    ) {
-
-      addMessage(
-        data?.reply ||
-        "NOA не смог обработать изображение. Попробуй ещё раз.",
-        "noa"
-      );
-
-    } else {
-
-      addMessage(
-        String(data.reply),
-        "noa"
-      );
-
-    }
-
 
   } catch (error) {
 
     console.error(
-      "Ошибка изображения:",
+      "Ошибка чтения изображения:",
       error
     );
 
-    removeTyping();
+    removePendingImage();
 
     addMessage(
-      "Не удалось отправить изображение. Проверь соединение и попробуй ещё раз.",
+      "Не удалось подготовить изображение.",
       "noa error"
     );
 
-  } finally {
+    return;
 
-    waiting = false;
+  }
 
-    send.disabled = false;
 
-    attachmentButton.disabled = false;
+  input.focus();
 
-    input.value = "";
+}
 
-    input.style.height =
-      "42px";
+
+/* ===== УДАЛИТЬ ВЛОЖЕНИЕ ===== */
+
+function removePendingImage() {
+
+  if (pendingImageUrl) {
 
     URL.revokeObjectURL(
-      imageUrl
+      pendingImageUrl
     );
 
   }
+
+
+  pendingImageFile = null;
+
+  pendingImageData = null;
+
+  pendingImageUrl = null;
+
+
+  pendingAttachment.innerHTML = "";
+
+  pendingAttachment.classList.remove(
+    "open"
+  );
 
 }
 
@@ -1459,7 +1549,7 @@ function fileToDataURL(file) {
 }
 
 
-/* ===== ОТПРАВКА ТЕКСТА ===== */
+/* ===== ОТПРАВКА ===== */
 
 chatForm.addEventListener(
   "submit",
@@ -1472,10 +1562,21 @@ chatForm.addEventListener(
       input.value.trim();
 
 
+    /* Нечего отправлять */
+
     if (
-      !text ||
-      waiting
-    ) return;
+      !text &&
+      !pendingImageData
+    ) {
+
+      return;
+
+    }
+
+
+    if (waiting) {
+      return;
+    }
 
 
     startNOA();
@@ -1485,11 +1586,35 @@ chatForm.addEventListener(
     closeAttachmentMenu();
 
 
-    addMessage(
-      text,
-      "user"
-    );
+    /* Запоминаем вложение */
 
+    const imageData =
+      pendingImageData;
+
+    const imageUrl =
+      pendingImageUrl;
+
+
+    /* Показываем сообщение пользователя */
+
+    if (imageData) {
+
+      addImageMessage(
+        imageUrl,
+        text
+      );
+
+    } else {
+
+      addMessage(
+        text,
+        "user"
+      );
+
+    }
+
+
+    /* Очищаем поле */
 
     input.value = "";
 
@@ -1497,18 +1622,47 @@ chatForm.addEventListener(
       "42px";
 
 
+    /* Очищаем превью */
+
+    pendingImageFile = null;
+
+    pendingImageData = null;
+
+    pendingImageUrl = null;
+
+    pendingAttachment.innerHTML = "";
+
+    pendingAttachment.classList.remove(
+      "open"
+    );
+
+
     waiting = true;
 
     send.disabled = true;
 
-    attachmentButton.disabled =
-      true;
+    attachmentButton.disabled = true;
 
 
     showTyping();
 
 
     try {
+
+      const payload = {
+        message: text
+      };
+
+
+      /* Фото добавляем только если оно есть */
+
+      if (imageData) {
+
+        payload.image =
+          imageData;
+
+      }
+
 
       const response =
         await fetch(
@@ -1521,9 +1675,8 @@ chatForm.addEventListener(
                 "application/json"
             },
 
-            body: JSON.stringify({
-              message: text
-            })
+            body:
+              JSON.stringify(payload)
 
           }
         );
@@ -1540,7 +1693,7 @@ chatForm.addEventListener(
       } catch {
 
         throw new Error(
-          "Неверный ответ сервера."
+          "Сервер вернул неправильный ответ."
         );
 
       }
@@ -1557,7 +1710,7 @@ chatForm.addEventListener(
 
         addMessage(
           data?.reply ||
-          "NOA не смог сформировать ответ. Попробуй ещё раз.",
+          "NOA не смог обработать запрос. Попробуй ещё раз.",
           "noa"
         );
 
@@ -1579,6 +1732,7 @@ chatForm.addEventListener(
       );
 
       removeTyping();
+
 
       addMessage(
         "Не удалось подключиться к NOA. Попробуй ещё раз.",
@@ -1680,6 +1834,8 @@ document
 
       input.style.height =
         "42px";
+
+      removePendingImage();
 
       closeMenu();
 
