@@ -20,323 +20,215 @@ export default {
     }
 
     /* =========================================================
-       POST /api/chat
+       API
     ========================================================= */
 
-    if (
-      request.method === "POST" &&
-      url.pathname === "/api/chat"
-    ) {
+    if (url.pathname.startsWith("/api/")) {
       try {
-        /* -----------------------------------------------------
-           Проверяем Workers AI
-        ----------------------------------------------------- */
+        /* =====================================================
+           POST /api/chat
+        ===================================================== */
 
         if (
-          !env.AI ||
-          typeof env.AI.run !== "function"
+          request.method === "POST" &&
+          url.pathname === "/api/chat"
         ) {
-          console.error("NOA: env.AI недоступен");
-
-          return json(
-            {
-              reply:
-                "NOA сейчас не может подключиться к AI-модели."
-            },
-            500
-          );
+          return await handleChat(request, env);
         }
-
-        /* -----------------------------------------------------
-           Читаем JSON
-        ----------------------------------------------------- */
-
-        let body;
-
-        try {
-          body = await request.json();
-        } catch (error) {
-          console.error(
-            "NOA JSON ERROR:",
-            error
-          );
-
-          return json(
-            {
-              reply:
-                "NOA не смог прочитать запрос."
-            },
-            400
-          );
-        }
-
-        /* -----------------------------------------------------
-           Сообщение
-        ----------------------------------------------------- */
-
-        const message =
-          typeof body?.message === "string"
-            ? body.message.trim()
-            : "";
-
-        /* -----------------------------------------------------
-           Изображение
-        ----------------------------------------------------- */
-
-        const image =
-          typeof body?.image === "string"
-            ? body.image.trim()
-            : "";
 
         /* =====================================================
-           VISION
+           HISTORY
         ===================================================== */
 
-        if (image) {
-          console.log(
-            "NOA: получено изображение"
-          );
+        if (url.pathname === "/api/history") {
+          return await handleHistory(request, env);
+        }
 
-          /* ---------------------------------------------------
-             Проверяем Data URL
-          --------------------------------------------------- */
+        /* =====================================================
+           PROJECTS
+        ===================================================== */
+
+        if (url.pathname === "/api/projects") {
+          return await handleProjects(request, env);
+        }
+
+        /* =====================================================
+           MEMORY
+        ===================================================== */
+
+        if (url.pathname === "/api/memory") {
+          return await handleMemory(request, env);
+        }
+
+        /* =====================================================
+           NOTIFICATIONS
+        ===================================================== */
+
+        if (url.pathname === "/api/notifications") {
+          return await handleNotifications(request, env);
+        }
+
+        return json(
+          {
+            error: "API endpoint not found",
+            reply: "NOA: такой API-маршрут пока не существует."
+          },
+          404
+        );
+      } catch (error) {
+        console.error(
+          "NOA API FATAL ERROR:",
+          serializeError(error)
+        );
+
+        return json(
+          {
+            reply:
+              "Произошла ошибка при обработке запроса. Попробуй ещё раз."
+          },
+          500
+        );
+      }
+    }
+
+    /* =========================================================
+       404
+    ========================================================= */
+
+    return new Response("Not Found", {
+      status: 404,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8"
+      }
+    });
+  }
+};
+
+
+/* =============================================================
+   CHAT
+============================================================= */
+
+async function handleChat(request, env) {
+  if (!env.AI || typeof env.AI.run !== "function") {
+    console.error("NOA: env.AI недоступен");
+
+    return json(
+      {
+        reply:
+          "NOA сейчас не может подключиться к AI-модели."
+      },
+      500
+    );
+  }
+
+  /* -----------------------------------------------------------
+     JSON
+  ----------------------------------------------------------- */
+
+  let body;
+
+  try {
+    body = await request.json();
+  } catch (error) {
+    console.error(
+      "NOA JSON ERROR:",
+      serializeError(error)
+    );
+
+    return json(
+      {
+        reply:
+          "NOA не смог прочитать запрос."
+      },
+      400
+    );
+  }
+
+  const message =
+    typeof body?.message === "string"
+      ? body.message.trim()
+      : "";
+
+  const image =
+    typeof body?.image === "string"
+      ? body.image.trim()
+      : "";
+
+  /* ===========================================================
+     VISION
+  =========================================================== */
+
+  if (image) {
+    return await handleVision(
+      env,
+      message,
+      image
+    );
+  }
+
+  /* ===========================================================
+     TEXT
+  =========================================================== */
+
+  if (!message) {
+    return json(
+      {
+        reply:
+          "Напиши сообщение или прикрепи изображение."
+      },
+      400
+    );
+  }
+
+  /* ===========================================================
+     HISTORY FROM CLIENT
+  =========================================================== */
+
+  let conversation = [];
+
+  if (Array.isArray(body?.messages)) {
+    conversation =
+      body.messages
+        .filter(item => {
+          if (!item) {
+            return false;
+          }
 
           if (
-            !/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(image)
+            item.role !== "user" &&
+            item.role !== "assistant"
           ) {
-            console.error(
-              "NOA: изображение не является корректным Data URL"
-            );
-
-            return json(
-              {
-                reply:
-                  "NOA получил изображение в неподдерживаемом формате."
-              },
-              400
-            );
+            return false;
           }
 
-          /* ---------------------------------------------------
-             Размер изображения
-          --------------------------------------------------- */
-
-          const MAX_IMAGE_LENGTH =
-            12 * 1024 * 1024;
-
-          if (image.length > MAX_IMAGE_LENGTH) {
-            return json(
-              {
-                reply:
-                  "Изображение слишком большое. Попробуй выбрать фото поменьше."
-              },
-              413
-            );
-          }
-
-          /* ---------------------------------------------------
-             Вопрос пользователя
-
-             Если текста нет, Worker НЕ меняет сообщение
-             пользователя. Для модели используется отдельная
-             внутренняя инструкция.
-          --------------------------------------------------- */
-
-          const imageQuestion =
-            message ||
-            "Опиши, что находится на изображении, и выдели важные детали.";
-
-          /* ===================================================
-             VISION SYSTEM PROMPT
-          =================================================== */
-
-          const visionSystemPrompt = `
-Ты — NOA, персональный AI-ассистент.
-
-Ты умеешь анализировать изображения.
-
-Внимательно изучи переданное изображение.
-
-Отвечай именно на вопрос пользователя, если он задан.
-
-Если пользователь отправил только изображение без текста, самостоятельно опиши то, что действительно видно на изображении.
-
-Не выдумывай детали.
-
-Если какая-либо деталь неразборчива или её невозможно определить, честно скажи об этом.
-
-Отвечай на языке пользователя.
-
-Общайся естественно и понятно.
-
-Можно использовать эмодзи, если они подходят ситуации.
-
-Не используй Markdown-выделение.
-
-Не используй:
-**
-***
-__
-###
-
-Не используй ненужные хэштеги.
-
-Для списков можно использовать:
-•
-
-Если пользователь спрашивает о конкретном объекте на изображении, сосредоточься именно на нём.
-
-Если на изображении есть текст, постарайся его прочитать и использовать в ответе.
-`;
-
-          /* ===================================================
-             VISION MODEL
-          =================================================== */
-
-          let visionResult;
-
-          try {
-            visionResult = await env.AI.run(
-              "@cf/meta/llama-3.2-11b-vision-instruct",
-              {
-                messages: [
-                  {
-                    role: "system",
-                    content: visionSystemPrompt
-                  },
-                  {
-                    role: "user",
-                    content: imageQuestion
-                  }
-                ],
-
-                image: image,
-
-                max_tokens: 1024,
-
-                temperature: 0.6
-              }
-            );
-
-          } catch (visionError) {
-            console.error(
-              "NOA VISION ERROR:",
-              serializeError(visionError)
-            );
-
-            return json(
-              {
-                reply:
-                  "NOA получил фото, но Vision-модель сейчас не смогла его обработать."
-              },
-              502
-            );
-          }
-
-          /* ---------------------------------------------------
-             Логируем результат
-          --------------------------------------------------- */
-
-          console.log(
-            "NOA VISION RESULT:",
-            safeStringify(visionResult)
+          return (
+            typeof item.content === "string" &&
+            item.content.trim().length > 0
           );
+        })
+        .map(item => ({
+          role: item.role,
+          content: item.content.trim()
+        }));
+  }
 
-          /* ---------------------------------------------------
-             Ответ Vision
-          --------------------------------------------------- */
+  if (conversation.length === 0) {
+    conversation = [
+      {
+        role: "user",
+        content: message
+      }
+    ];
+  }
 
-          const visionReply =
-            extractReply(visionResult);
+  conversation = conversation.slice(-20);
 
-          if (
-            !visionReply ||
-            isInvalidReply(visionReply)
-          ) {
-            console.error(
-              "NOA: Vision вернула пустой ответ:",
-              safeStringify(visionResult)
-            );
+  /* ===========================================================
+     SYSTEM PROMPT
+  =========================================================== */
 
-            return json(
-              {
-                reply:
-                  "NOA получил фото, но Vision-модель не вернула ответ."
-              },
-              502
-            );
-          }
-
-          return json({
-            reply: cleanReply(visionReply)
-          });
-        }
-
-        /* =====================================================
-           ОБЫЧНЫЙ ТЕКСТ
-        ===================================================== */
-
-        if (!message) {
-          return json(
-            {
-              reply:
-                "Напиши сообщение или прикрепи изображение."
-            },
-            400
-          );
-        }
-
-        /* =====================================================
-           ИСТОРИЯ
-        ===================================================== */
-
-        let conversation = [];
-
-        if (
-          Array.isArray(body?.messages)
-        ) {
-          conversation =
-            body.messages
-              .filter(item => {
-                if (!item) {
-                  return false;
-                }
-
-                if (
-                  item.role !== "user" &&
-                  item.role !== "assistant"
-                ) {
-                  return false;
-                }
-
-                return (
-                  typeof item.content === "string" &&
-                  item.content.trim().length > 0
-                );
-              })
-              .map(item => ({
-                role: item.role,
-                content: item.content.trim()
-              }));
-        }
-
-        if (conversation.length === 0) {
-          conversation = [
-            {
-              role: "user",
-              content: message
-            }
-          ];
-        }
-
-        conversation =
-          conversation.slice(-20);
-
-        /* =====================================================
-           SYSTEM PROMPT
-        ===================================================== */
-
-        const systemPrompt = `
+  const systemPrompt = `
 Ты — NOA, персональный AI-ассистент.
 
 Общайся естественно и по-человечески.
@@ -371,7 +263,7 @@ undefined
 
 Не отправляй пустой ответ.
 
-Форматирование:
+ФОРМАТИРОВАНИЕ:
 
 Не используй Markdown-выделение.
 
@@ -383,132 +275,485 @@ __
 
 Не используй ненужные хэштеги.
 
-Обычные абзацы использовать можно.
-
 Для списков можно использовать:
 •
 
-Старайся отвечать понятно и естественно.
+Обычные абзацы использовать можно.
+
+Отвечай понятно и естественно.
 
 Если пользователь обращается к тебе как к NOA — отвечай как NOA.
 
 Если пользователь спрашивает:
 "Кто твой создатель?"
-или аналогичный вопрос,
+или задаёт аналогичный вопрос,
 
 отвечай:
 "Мой создатель - Randy."
 `;
 
-        /* =====================================================
-           TEXT MODEL
-        ===================================================== */
+  /* ===========================================================
+     MODEL
+  =========================================================== */
 
-        let textResult;
+  let textResult;
 
-        try {
-          textResult = await env.AI.run(
-            "@cf/zai-org/glm-4.7-flash",
-            {
-              messages: [
-                {
-                  role: "system",
-                  content: systemPrompt
-                },
-                ...conversation
-              ],
-
-              max_tokens: 4096,
-
-              temperature: 0.7
-            }
-          );
-
-        } catch (modelError) {
-          console.error(
-            "NOA TEXT MODEL ERROR:",
-            serializeError(modelError)
-          );
-
-          return json(
-            {
-              reply:
-                "NOA не смог обработать этот запрос. Попробуй ещё раз."
-            },
-            502
-          );
-        }
-
-        /* -----------------------------------------------------
-           Лог
-        ----------------------------------------------------- */
-
-        console.log(
-          "NOA TEXT RESULT:",
-          safeStringify(textResult)
-        );
-
-        /* -----------------------------------------------------
-           Извлекаем ответ
-        ----------------------------------------------------- */
-
-        const reply =
-          extractReply(textResult);
-
-        if (
-          !reply ||
-          isInvalidReply(reply)
-        ) {
-          console.error(
-            "NOA: пустой ответ модели:",
-            safeStringify(textResult)
-          );
-
-          return json(
-            {
-              reply:
-                "NOA не смог сформировать ответ. Попробуй ещё раз."
-            },
-            502
-          );
-        }
-
-        return json({
-          reply: cleanReply(reply)
-        });
-
-      } catch (error) {
-        console.error(
-          "NOA FATAL ERROR:",
-          serializeError(error)
-        );
-
-        return json(
-          {
-            reply:
-              "Произошла ошибка при обработке запроса. Попробуй ещё раз."
-          },
-          500
-        );
-      }
-    }
-
-    /* =========================================================
-       404
-    ========================================================= */
-
-    return new Response(
-      "Not Found",
+  try {
+    textResult = await env.AI.run(
+      "@cf/zai-org/glm-4.7-flash",
       {
-        status: 404,
-        headers: {
-          "Content-Type":
-            "text/plain; charset=utf-8"
-        }
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          ...conversation
+        ],
+
+        max_tokens: 4096,
+        temperature: 0.7
       }
     );
+  } catch (modelError) {
+    console.error(
+      "NOA TEXT MODEL ERROR:",
+      serializeError(modelError)
+    );
+
+    return json(
+      {
+        reply:
+          "NOA не смог обработать этот запрос. Попробуй ещё раз."
+      },
+      502
+    );
   }
-};
+
+  console.log(
+    "NOA TEXT RESULT:",
+    safeStringify(textResult)
+  );
+
+  const reply =
+    extractReply(textResult);
+
+  if (!reply || isInvalidReply(reply)) {
+    console.error(
+      "NOA: пустой ответ модели:",
+      safeStringify(textResult)
+    );
+
+    return json(
+      {
+        reply:
+          "NOA не смог сформировать ответ. Попробуй ещё раз."
+      },
+      502
+    );
+  }
+
+  const cleaned =
+    cleanReply(reply);
+
+  if (!cleaned || isInvalidReply(cleaned)) {
+    return json(
+      {
+        reply:
+          "NOA не смог сформировать ответ. Попробуй ещё раз."
+      },
+      502
+    );
+  }
+
+  return json({
+    reply: cleaned
+  });
+}
+
+
+/* =============================================================
+   VISION
+============================================================= */
+
+async function handleVision(
+  env,
+  message,
+  image
+) {
+  console.log(
+    "NOA: получено изображение"
+  );
+
+  /* -----------------------------------------------------------
+     Data URL
+  ----------------------------------------------------------- */
+
+  if (
+    !/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(image)
+  ) {
+    return json(
+      {
+        reply:
+          "NOA получил изображение в неподдерживаемом формате."
+      },
+      400
+    );
+  }
+
+  /* -----------------------------------------------------------
+     Size
+  ----------------------------------------------------------- */
+
+  const MAX_IMAGE_LENGTH =
+    12 * 1024 * 1024;
+
+  if (image.length > MAX_IMAGE_LENGTH) {
+    return json(
+      {
+        reply:
+          "Изображение слишком большое. Попробуй выбрать фото поменьше."
+      },
+      413
+    );
+  }
+
+  const imageQuestion =
+    message ||
+    "Опиши, что находится на изображении, и выдели важные детали.";
+
+  /* -----------------------------------------------------------
+     Vision prompt
+  ----------------------------------------------------------- */
+
+  const visionSystemPrompt = `
+Ты — NOA, персональный AI-ассистент.
+
+Ты умеешь анализировать изображения.
+
+Внимательно изучи переданное изображение.
+
+Отвечай именно на вопрос пользователя, если он задан.
+
+Если пользователь отправил только изображение без текста,
+самостоятельно опиши то, что действительно видно на изображении.
+
+Не выдумывай детали.
+
+Если какая-либо деталь неразборчива или её невозможно определить,
+честно скажи об этом.
+
+Отвечай на языке пользователя.
+
+Общайся естественно и понятно.
+
+Можно использовать эмодзи, если они подходят ситуации.
+
+Не используй Markdown-выделение.
+
+Не используй:
+**
+***
+__
+###
+
+Не используй ненужные хэштеги.
+
+Для списков можно использовать:
+•
+
+Если пользователь спрашивает о конкретном объекте,
+сосредоточься именно на нём.
+
+Если на изображении есть текст,
+постарайся его прочитать и использовать в ответе.
+`;
+
+  let visionResult;
+
+  try {
+    visionResult = await env.AI.run(
+      "@cf/meta/llama-3.2-11b-vision-instruct",
+      {
+        messages: [
+          {
+            role: "system",
+            content: visionSystemPrompt
+          },
+          {
+            role: "user",
+            content: imageQuestion
+          }
+        ],
+
+        image: image,
+
+        max_tokens: 1024,
+        temperature: 0.6
+      }
+    );
+  } catch (visionError) {
+    console.error(
+      "NOA VISION ERROR:",
+      serializeError(visionError)
+    );
+
+    return json(
+      {
+        reply:
+          "NOA получил фото, но Vision-модель сейчас не смогла его обработать."
+      },
+      502
+    );
+  }
+
+  console.log(
+    "NOA VISION RESULT:",
+    safeStringify(visionResult)
+  );
+
+  const visionReply =
+    extractReply(visionResult);
+
+  if (
+    !visionReply ||
+    isInvalidReply(visionReply)
+  ) {
+    console.error(
+      "NOA: Vision вернула пустой ответ:",
+      safeStringify(visionResult)
+    );
+
+    return json(
+      {
+        reply:
+          "NOA получил фото, но Vision-модель не вернула ответ."
+      },
+      502
+    );
+  }
+
+  const cleaned =
+    cleanReply(visionReply);
+
+  if (
+    !cleaned ||
+    isInvalidReply(cleaned)
+  ) {
+    return json(
+      {
+        reply:
+          "NOA получил фото, но не смог сформировать ответ."
+      },
+      502
+    );
+  }
+
+  return json({
+    reply: cleaned
+  });
+}
+
+
+/* =============================================================
+   HISTORY
+============================================================= */
+
+async function handleHistory(request, env) {
+  /*
+     D1 пока не подключена.
+
+     Поэтому API уже существует,
+     но реальное постоянное хранение появится
+     после подключения базы.
+  */
+
+  if (request.method === "GET") {
+    return json({
+      success: true,
+      history: [],
+      storage: "not_connected"
+    });
+  }
+
+  if (request.method === "POST") {
+    let body;
+
+    try {
+      body = await request.json();
+    } catch {
+      return json(
+        {
+          success: false,
+          error: "Invalid JSON"
+        },
+        400
+      );
+    }
+
+    return json({
+      success: true,
+      saved: false,
+      storage: "not_connected",
+      data: body || null
+    });
+  }
+
+  return json(
+    {
+      error: "Method Not Allowed"
+    },
+    405
+  );
+}
+
+
+/* =============================================================
+   PROJECTS
+============================================================= */
+
+async function handleProjects(request, env) {
+  if (request.method === "GET") {
+    return json({
+      success: true,
+      projects: [],
+      storage: "not_connected"
+    });
+  }
+
+  if (request.method === "POST") {
+    let body;
+
+    try {
+      body = await request.json();
+    } catch {
+      return json(
+        {
+          success: false,
+          error: "Invalid JSON"
+        },
+        400
+      );
+    }
+
+    return json({
+      success: true,
+      created: false,
+      storage: "not_connected",
+      data: body || null
+    });
+  }
+
+  if (request.method === "DELETE") {
+    return json({
+      success: true,
+      deleted: false,
+      storage: "not_connected"
+    });
+  }
+
+  return json(
+    {
+      error: "Method Not Allowed"
+    },
+    405
+  );
+}
+
+
+/* =============================================================
+   MEMORY
+============================================================= */
+
+async function handleMemory(request, env) {
+  if (request.method === "GET") {
+    return json({
+      success: true,
+      memory: [],
+      storage: "not_connected"
+    });
+  }
+
+  if (
+    request.method === "POST" ||
+    request.method === "PUT"
+  ) {
+    let body;
+
+    try {
+      body = await request.json();
+    } catch {
+      return json(
+        {
+          success: false,
+          error: "Invalid JSON"
+        },
+        400
+      );
+    }
+
+    return json({
+      success: true,
+      saved: false,
+      storage: "not_connected",
+      data: body || null
+    });
+  }
+
+  return json(
+    {
+      error: "Method Not Allowed"
+    },
+    405
+  );
+}
+
+
+/* =============================================================
+   NOTIFICATIONS
+============================================================= */
+
+async function handleNotifications(
+  request,
+  env
+) {
+  if (request.method === "GET") {
+    return json({
+      success: true,
+      notifications: [],
+      storage: "not_connected"
+    });
+  }
+
+  if (request.method === "POST") {
+    let body;
+
+    try {
+      body = await request.json();
+    } catch {
+      return json(
+        {
+          success: false,
+          error: "Invalid JSON"
+        },
+        400
+      );
+    }
+
+    return json({
+      success: true,
+      created: false,
+      storage: "not_connected",
+      data: body || null
+    });
+  }
+
+  return json(
+    {
+      error: "Method Not Allowed"
+    },
+    405
+  );
+}
 
 
 /* =============================================================
@@ -520,9 +765,7 @@ function extractReply(result) {
     return "";
   }
 
-  if (
-    typeof result === "string"
-  ) {
+  if (typeof result === "string") {
     return result.trim();
   }
 
@@ -545,6 +788,22 @@ function extractReply(result) {
   }
 
   if (
+    typeof result.text === "string"
+  ) {
+    return result.text.trim();
+  }
+
+  if (
+    typeof result.content === "string"
+  ) {
+    return result.content.trim();
+  }
+
+  /* -----------------------------------------------------------
+     choices
+  ----------------------------------------------------------- */
+
+  if (
     Array.isArray(result.choices) &&
     result.choices.length > 0
   ) {
@@ -558,29 +817,98 @@ function extractReply(result) {
     }
 
     if (
+      Array.isArray(choice?.message?.content)
+    ) {
+      const text =
+        choice.message.content
+          .map(item => {
+            if (
+              typeof item === "string"
+            ) {
+              return item;
+            }
+
+            return (
+              item?.text ||
+              ""
+            );
+          })
+          .join("");
+
+      if (text.trim()) {
+        return text.trim();
+      }
+    }
+
+    if (
       typeof choice?.text === "string"
     ) {
       return choice.text.trim();
     }
   }
 
+  /* -----------------------------------------------------------
+     output
+  ----------------------------------------------------------- */
+
   if (
-    Array.isArray(result.output) &&
-    result.output.length > 0
+    Array.isArray(result.output)
   ) {
-    const first =
-      result.output[0];
+    const text =
+      result.output
+        .map(item => {
+          if (
+            typeof item === "string"
+          ) {
+            return item;
+          }
 
-    if (
-      typeof first?.content === "string"
-    ) {
-      return first.content.trim();
+          if (
+            typeof item?.text === "string"
+          ) {
+            return item.text;
+          }
+
+          if (
+            typeof item?.content === "string"
+          ) {
+            return item.content;
+          }
+
+          if (
+            Array.isArray(item?.content)
+          ) {
+            return item.content
+              .map(part =>
+                typeof part === "string"
+                  ? part
+                  : part?.text || ""
+              )
+              .join("");
+          }
+
+          return "";
+        })
+        .join("");
+
+    if (text.trim()) {
+      return text.trim();
     }
+  }
 
-    if (
-      typeof first?.text === "string"
-    ) {
-      return first.text.trim();
+  /* -----------------------------------------------------------
+     nested result
+  ----------------------------------------------------------- */
+
+  if (
+    result.result &&
+    typeof result.result === "object"
+  ) {
+    const nested =
+      extractReply(result.result);
+
+    if (nested) {
+      return nested;
     }
   }
 
