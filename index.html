@@ -56,89 +56,339 @@ button {
 }
 
 /* =========================================================
-   ЛОГОТИП
+   МАСКОТ NOA
 ========================================================= */
 
 .logo-screen {
   position: absolute;
   inset: 0;
-
-  width: 100%;
-  height: 100%;
-
-  /*
-    ВАЖНО:
-    Логотип должен находиться НАД чатом,
-    но НЕ должен перекрывать меню и панели.
-  */
   z-index: 20;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /*
-    Главное исправление:
-    фон прозрачный, поэтому чат и поле ввода
-    остаются видимыми.
-  */
-  background: transparent;
-
-  /*
-    Логотип не блокирует нажатия.
-  */
   pointer-events: none;
-
-  transition:
-    transform .85s cubic-bezier(.22,.61,.36,1),
-    opacity .65s ease;
+  background: transparent;
 }
 
-.logo {
-  margin: 0;
-  padding: 0;
-
-  font-size: clamp(114px, 30vw, 225px);
-  font-weight: 800;
-  letter-spacing: -.075em;
-  line-height: 1;
-
-  background: linear-gradient(
-    180deg,
-    #fff 0%,
-    #dedede 35%,
-    #898989 68%,
-    #f4f4f4 100%
-  );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-
-  animation: logoAppear 1s ease both;
+.mascot-stage {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  transform: translate(-50%, -50%);
+  transition: left .9s cubic-bezier(.2,.8,.2,1),
+              top .9s cubic-bezier(.2,.8,.2,1),
+              transform .9s cubic-bezier(.2,.8,.2,1),
+              opacity .45s ease;
 }
 
-@keyframes logoAppear {
-  from {
-    opacity: 0;
-    transform: scale(.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.mascot {
+  --eye: #ff9acb;
+  --hood: #d8d8d5;
+  --body: #c8c8c5;
+  position: relative;
+  width: 154px;
+  height: 224px;
+  transform-origin: 50% 85%;
+  animation: mascotArrive .9s cubic-bezier(.2,.8,.2,1) both,
+             mascotFloat 3.2s ease-in-out 1s infinite;
+  filter: drop-shadow(0 15px 22px rgba(0,0,0,.45));
 }
 
-/*
-  После первого сообщения
-  большой логотип уезжает вверх.
-*/
-
-.app.started .logo-screen {
-  transform: translateY(-100%);
-  opacity: 0;
+.mascot-shadow {
+  position: absolute;
+  left: 27px;
+  bottom: 0;
+  width: 100px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.16);
+  filter: blur(8px);
 }
+
+.mascot-hood {
+  position: absolute;
+  z-index: 1;
+  left: 28px;
+  top: 7px;
+  width: 98px;
+  height: 91px;
+  border-radius: 43% 43% 35% 35%;
+  background: linear-gradient(145deg,#f4f3ef,var(--hood) 58%,#858582);
+  box-shadow: inset 4px 5px 9px rgba(255,255,255,.55),
+              inset -5px -7px 12px rgba(0,0,0,.25);
+}
+
+.mascot-head {
+  position: absolute;
+  z-index: 3;
+  left: 32px;
+  top: 17px;
+  width: 90px;
+  height: 77px;
+}
+
+.mascot-ear {
+  position: absolute;
+  top: 26px;
+  width: 19px;
+  height: 27px;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#f5f5f5,#777 55%,#d9d9d9);
+  border: 2px solid #9c9c9c;
+  box-shadow: 0 0 8px rgba(255,255,255,.15);
+}
+.mascot-ear.left { left: -9px; }
+.mascot-ear.right { right: -9px; }
+
+.mascot-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 27px;
+  background: linear-gradient(145deg,#252525,#050505 62%,#171717);
+  border: 2px solid #777;
+  box-shadow: inset 0 2px 8px rgba(255,255,255,.15),
+              inset 0 -5px 12px rgba(0,0,0,.8),
+              0 0 0 3px rgba(220,220,220,.12);
+}
+
+.mascot-eye {
+  position: absolute;
+  top: 34px;
+  width: 19px;
+  height: 5px;
+  border-radius: 8px;
+  background: var(--eye);
+  box-shadow: 0 0 7px var(--eye),0 0 16px var(--eye);
+  transition: all .25s ease;
+}
+.mascot-eye.left { left: 19px; }
+.mascot-eye.right { right: 19px; }
+
+.mascot[data-emotion="thinking"] .mascot-eye {
+  height: 4px;
+  transform: rotate(-12deg);
+}
+.mascot[data-emotion="happy"] .mascot-eye {
+  height: 7px;
+  border-radius: 100% 100% 3px 3px;
+}
+.mascot[data-emotion="curious"] .mascot-eye {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+}
+.mascot[data-emotion="sleepy"] .mascot-eye {
+  height: 2px;
+  transform: rotate(5deg);
+}
+
+.mascot-body {
+  position: absolute;
+  z-index: 2;
+  left: 36px;
+  top: 91px;
+  width: 82px;
+  height: 75px;
+  border-radius: 25px 25px 19px 19px;
+  background: linear-gradient(145deg,#f0efeb,var(--body) 60%,#777);
+  box-shadow: inset 4px 3px 8px rgba(255,255,255,.55),
+              inset -5px -6px 10px rgba(0,0,0,.25);
+}
+.mascot-arm {
+  position: absolute;
+  top: 13px;
+  width: 23px;
+  height: 56px;
+  border-radius: 15px;
+  background: linear-gradient(90deg,#e9e8e4,#aaa9a5);
+  transform-origin: 50% 12%;
+}
+.mascot-arm.left { left: -14px; transform: rotate(12deg); }
+.mascot-arm.right {
+  right: -14px;
+  transform: rotate(-12deg);
+  animation: mascotWave 1.15s ease-in-out .55s 2;
+}
+.mascot-body::after {
+  content: "";
+  position: absolute;
+  left: 19px;
+  right: 19px;
+  top: 13px;
+  height: 1px;
+  background: rgba(255,255,255,.55);
+}
+.mascot-outfit-detail {
+  position: absolute;
+  left: 35px;
+  top: 19px;
+  width: 12px;
+  height: 17px;
+  border-left: 2px solid rgba(80,80,80,.45);
+  border-bottom: 2px solid rgba(80,80,80,.45);
+  transform: rotate(-35deg);
+}
+.mascot-legs {
+  position: absolute;
+  z-index: 1;
+  left: 49px;
+  top: 157px;
+  display: flex;
+  gap: 12px;
+}
+.mascot-leg {
+  width: 22px;
+  height: 34px;
+  border-radius: 7px 7px 10px 10px;
+  background: linear-gradient(90deg,#303034,#09090b);
+}
+.mascot-shoes {
+  position: absolute;
+  z-index: 2;
+  left: 39px;
+  top: 184px;
+  display: flex;
+  gap: 13px;
+}
+.mascot-shoe {
+  width: 34px;
+  height: 17px;
+  border-radius: 12px 12px 7px 7px;
+  background: linear-gradient(160deg,#fff,#e9d8e3 60%,#a7a1a5);
+  border-bottom: 3px solid #f1a8ca;
+}
+
+.mascot-caption {
+  padding: 8px 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 20px;
+  color: #e8e8e8;
+  background: rgba(30,30,30,.48);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: 13px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+}
+
+.mascot[data-outfit="pirate"] { --eye:#ffbd83; --hood:#55504b; --body:#7b5948; }
+.mascot[data-outfit="emo"] { --eye:#d9a6ff; --hood:#3b3941; --body:#242329; }
+.mascot[data-outfit="preppy"] { --eye:#a9d8ff; --hood:#e7e5df; --body:#b9c9d7; }
+.mascot[data-outfit="professor"] { --eye:#a8e5d4; --hood:#c8c0ad; --body:#aaa18d; }
+.mascot[data-outfit="pastel"] { --eye:#ff9acb; --hood:#e5e2df; --body:#d4d1ce; }
+
+.mascot[data-outfit="pirate"] .mascot-hood::before {
+  content:"";
+  position:absolute;
+  left:13px;
+  top:-13px;
+  width:72px;
+  height:25px;
+  border-radius:50% 50% 8px 8px;
+  background:linear-gradient(#252323,#050505);
+  border-bottom:4px solid #b18b56;
+}
+.mascot[data-outfit="emo"] .mascot-body { border-top:3px solid #17131c; }
+.mascot[data-outfit="preppy"] .mascot-outfit-detail {
+  width:0;height:0;left:37px;top:13px;
+  border-left:6px solid transparent;
+  border-right:6px solid transparent;
+  border-top:17px solid #54728e;
+}
+.mascot[data-outfit="professor"] .mascot-hood::before {
+  content:"";
+  position:absolute;
+  left:9px;top:-8px;width:80px;height:9px;
+  border-radius:3px;
+  background:#51493d;
+  box-shadow:0 -6px 0 -2px #766b57;
+}
+.mascot[data-outfit="pirate"] .mascot-caption::after { content:" · Пират"; }
+.mascot[data-outfit="emo"] .mascot-caption::after { content:" · Emo"; }
+.mascot[data-outfit="preppy"] .mascot-caption::after { content:" · Preppy"; }
+.mascot[data-outfit="professor"] .mascot-caption::after { content:" · Профессор"; }
+.mascot[data-outfit="pastel"] .mascot-caption::after { content:" · Pastel"; }
+
+@keyframes mascotArrive {
+  from { opacity:0; transform:translateY(-55px) scale(.82); }
+  to { opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes mascotFloat {
+  0%,100% { margin-top:0; }
+  50% { margin-top:-8px; }
+}
+@keyframes mascotWave {
+  0%,100% { transform:rotate(-12deg); }
+  30% { transform:rotate(-58deg); }
+  60% { transform:rotate(-4deg); }
+}
+@keyframes mascotSailAway {
+  to { transform:translate(150px,-150px) rotate(12deg) scale(.38); opacity:0; }
+}
+@keyframes mascotBookAway {
+  to { transform:translate(145px,-135px) rotate(-8deg) scale(.4); opacity:0; }
+}
+@keyframes mascotExit {
+  to { transform:translate(135px,-145px) scale(.35); opacity:0; }
+}
+
+.app.started .mascot-stage {
+  left: auto;
+  top: 78px;
+  right: 14px;
+  transform: translate(0,0) scale(.34);
+  transform-origin: top right;
+  opacity: 1;
+}
+.app.mascot-leaving .mascot-stage {
+  animation: mascotExit 1.35s cubic-bezier(.2,.7,.2,1) forwards;
+}
+.app.mascot-leaving[data-mascot-outfit="pirate"] .mascot-stage {
+  animation: mascotSailAway 1.5s ease-in forwards;
+}
+.app.mascot-leaving[data-mascot-outfit="professor"] .mascot-stage {
+  animation: mascotBookAway 1.5s ease-in forwards;
+}
+.app.mascot-leaving[data-mascot-outfit="pirate"] .mascot-stage::after {
+  content:"";
+  position:absolute;
+  right:-32px;
+  bottom:18px;
+  width:54px;
+  height:17px;
+  border-radius:4px 4px 18px 18px;
+  background:linear-gradient(180deg,#b28b58,#49301d);
+  border-top:2px solid #e3c18a;
+  box-shadow:0 5px 12px rgba(0,0,0,.4);
+}
+.app.mascot-leaving[data-mascot-outfit="professor"] .mascot-stage::after {
+  content:"";
+  position:absolute;
+  left:35px;
+  bottom:-8px;
+  width:85px;
+  height:13px;
+  border-radius:4px;
+  background:linear-gradient(180deg,#e8e2d4,#8b806b);
+  border:1px solid rgba(255,255,255,.6);
+  box-shadow:0 5px 12px rgba(0,0,0,.35);
+}
+.app.mascot-hidden .mascot-stage { opacity:0; }
+.app.mascot-docked .mascot-caption { display:none; }
+.app.mascot-docked .mascot { animation: mascotFloat 3.2s ease-in-out infinite; }
+
+@media (max-width: 480px) {
+  .mascot { transform:scale(.92); }
+  .app.started .mascot-stage { right:8px; top:75px; }
+}
+.no-animations .mascot,
+.no-animations .mascot-stage { animation:none !important; transition:none !important; }
 
 /* =========================================================
    ЧАТ
@@ -221,36 +471,6 @@ button {
   Маленький логотип сначала скрыт,
   чтобы не было двух NOA одновременно.
 */
-
-.topbar-logo {
-  position: absolute;
-
-  left: 50%;
-
-  transform: translateX(-50%);
-
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -.04em;
-
-  opacity: 0;
-
-  transition: opacity .35s ease;
-
-  background: linear-gradient(
-    180deg,
-    #fff,
-    #999
-  );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.app.started .topbar-logo {
-  opacity: 1;
-}
 
 /* =========================================================
    СООБЩЕНИЯ
@@ -474,17 +694,22 @@ button {
 
   padding: 7px 8px;
 
-  background: #111;
+  background: rgba(28,28,30,.48);
 
   border:
     1px solid
-    #292929;
+    rgba(255,255,255,.16);
 
   border-radius: 25px;
 
   box-shadow:
-    0 0 22px
-    rgba(255,255,255,.025);
+    0 8px 30px
+    rgba(0,0,0,.28),
+    inset 0 1px 0
+    rgba(255,255,255,.08);
+
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
 }
 
 /* =========================================================
@@ -1651,8 +1876,35 @@ textarea::placeholder {
        ЛОГОТИП
   ====================================================== -->
 
-  <section class="logo-screen" id="logoScreen">
-    <div class="logo">NOA</div>
+  <section class="logo-screen" id="logoScreen" aria-label="Маскот NOA">
+    <div class="mascot-stage" id="mascotStage">
+      <div class="mascot" id="mascot" data-outfit="pastel" data-emotion="happy">
+        <div class="mascot-shadow"></div>
+        <div class="mascot-hood"></div>
+        <div class="mascot-head">
+          <div class="mascot-ear left"></div>
+          <div class="mascot-ear right"></div>
+          <div class="mascot-face">
+            <span class="mascot-eye left"></span>
+            <span class="mascot-eye right"></span>
+          </div>
+        </div>
+        <div class="mascot-body">
+          <span class="mascot-arm left"></span>
+          <span class="mascot-arm right"></span>
+          <span class="mascot-outfit-detail"></span>
+        </div>
+        <div class="mascot-legs">
+          <span class="mascot-leg left"></span>
+          <span class="mascot-leg right"></span>
+        </div>
+        <div class="mascot-shoes">
+          <span class="mascot-shoe left"></span>
+          <span class="mascot-shoe right"></span>
+        </div>
+      </div>
+      <div class="mascot-caption" id="mascotCaption">Привет! Я NOA</div>
+    </div>
   </section>
 
   <!-- =====================================================
@@ -1671,10 +1923,6 @@ textarea::placeholder {
       >
         ☰
       </button>
-
-      <div class="topbar-logo">
-        NOA
-      </div>
 
     </header>
 
@@ -2066,6 +2314,48 @@ const app =
 const logoScreen =
   document.getElementById("logoScreen");
 
+const mascot =
+  document.getElementById("mascot");
+
+const mascotCaption =
+  document.getElementById("mascotCaption");
+
+const mascotOutfits = [
+  "pastel",
+  "pirate",
+  "emo",
+  "preppy",
+  "professor"
+];
+
+function applyMascotOutfit(next = false) {
+  let index = Number(localStorage.getItem("noa_mascot_outfit_index") || "0");
+  if (next) {
+    index = (index + 1) % mascotOutfits.length;
+    localStorage.setItem("noa_mascot_outfit_index", String(index));
+  }
+  const outfit = mascotOutfits[index % mascotOutfits.length];
+  mascot.dataset.outfit = outfit;
+  app.dataset.mascotOutfit = outfit;
+}
+
+function setMascotEmotion(emotion, caption) {
+  if (!mascot) return;
+  mascot.dataset.emotion = emotion;
+  if (caption && mascotCaption) mascotCaption.textContent = caption;
+}
+
+function mascotAlwaysEnabled() {
+  return localStorage.getItem("noa_mascot_always") === "1";
+}
+
+function resetMascotIntro(rotateOutfit = false) {
+  started = false;
+  app.classList.remove("started", "mascot-leaving", "mascot-hidden", "mascot-docked");
+  if (rotateOutfit) applyMascotOutfit(true);
+  setMascotEmotion("happy", "Привет! Я NOA");
+}
+
 const menuButton =
   document.getElementById("menuButton");
 
@@ -2154,6 +2444,8 @@ let pendingImageData = null;
 let pendingImageUrl = null;
 let currentChat = [];
 
+applyMascotOutfit();
+
 /* =========================================================
    СТАРТ NOA
 ========================================================= */
@@ -2165,8 +2457,23 @@ function startNOA() {
   }
 
   started = true;
-
   app.classList.add("started");
+
+  if (mascotAlwaysEnabled()) {
+    app.classList.add("mascot-docked");
+    app.classList.remove("mascot-hidden", "mascot-leaving");
+    return;
+  }
+
+  app.classList.remove("mascot-docked", "mascot-hidden");
+  app.classList.add("mascot-leaving");
+
+  window.setTimeout(() => {
+    if (!mascotAlwaysEnabled() && started) {
+      app.classList.add("mascot-hidden");
+    }
+    app.classList.remove("mascot-leaving");
+  }, 1550);
 }
 
 /* =========================================================
@@ -2190,6 +2497,12 @@ function addMessage(
 
   message.textContent =
     text;
+
+  if (type === "noa") {
+    setMascotEmotion("happy", "Готово! ✨");
+  } else if (type === "error") {
+    setMascotEmotion("thinking", "Проверяю соединение…");
+  }
 
   messages.appendChild(message);
 
@@ -2635,6 +2948,8 @@ document.getElementById(
 
     currentChat = [];
 
+    resetMascotIntro(true);
+
     messages.innerHTML = "";
 
     input.value = "";
@@ -3079,6 +3394,27 @@ document.getElementById(
           ></button>
 
         </div>
+
+        <div class="setting-row">
+
+          <div>
+            <div class="setting-name">
+              NOA всегда
+            </div>
+
+            <div class="setting-description">
+              Маскот остаётся в углу экрана после первого сообщения.
+            </div>
+          </div>
+
+          <button
+            class="toggle"
+            id="mascotAlwaysToggle"
+            type="button"
+            aria-label="NOA всегда"
+          ></button>
+
+        </div>
       `
     );
 
@@ -3124,6 +3460,35 @@ document.getElementById(
             : "0"
         );
 
+      }
+    );
+
+    const mascotAlwaysToggle =
+      document.getElementById("mascotAlwaysToggle");
+
+    if (mascotAlwaysEnabled()) {
+      mascotAlwaysToggle?.classList.add("active");
+    }
+
+    mascotAlwaysToggle?.addEventListener(
+      "click",
+      () => {
+        const enabled = mascotAlwaysToggle.classList.toggle("active");
+        localStorage.setItem("noa_mascot_always", enabled ? "1" : "0");
+
+        if (enabled && started) {
+          app.classList.remove("mascot-leaving", "mascot-hidden");
+          app.classList.add("mascot-docked");
+        } else if (!enabled && started) {
+          app.classList.remove("mascot-docked", "mascot-hidden");
+          app.classList.add("mascot-leaving");
+          window.setTimeout(() => {
+            if (!mascotAlwaysEnabled() && started) {
+              app.classList.add("mascot-hidden");
+            }
+            app.classList.remove("mascot-leaving");
+          }, 1550);
+        }
       }
     );
 
@@ -3463,6 +3828,7 @@ inputForm.addEventListener(
     attachmentButton.disabled =
       true;
 
+    setMascotEmotion("thinking", "Сейчас подумаю…");
     showTyping();
 
     try {
