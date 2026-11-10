@@ -93,8 +93,7 @@ button {
   width: 154px;
   height: 224px;
   transform-origin: 50% 85%;
-  animation: mascotArrive .9s cubic-bezier(.2,.8,.2,1) both,
-             mascotFloat 3.2s ease-in-out 1s infinite;
+  animation: mascotFloat 3.2s ease-in-out infinite;
   filter: drop-shadow(0 15px 22px rgba(0,0,0,.45));
 }
 
@@ -212,6 +211,12 @@ button {
 .mascot-arm.right {
   right: -14px;
   transform: rotate(-12deg);
+}
+.mascot.intro-animate {
+  animation: mascotArrive .9s cubic-bezier(.2,.8,.2,1) both,
+             mascotFloat 3.2s ease-in-out 1s infinite;
+}
+.mascot.intro-animate .mascot-arm.right {
   animation: mascotWave 1.15s ease-in-out .55s 2;
 }
 .mascot-body::after {
@@ -2349,11 +2354,20 @@ function mascotAlwaysEnabled() {
   return localStorage.getItem("noa_mascot_always") === "1";
 }
 
+function replayMascotIntro() {
+  if (!mascot || document.body.classList.contains("no-animations")) return;
+
+  mascot.classList.remove("intro-animate");
+  void mascot.offsetWidth;
+  mascot.classList.add("intro-animate");
+}
+
 function resetMascotIntro(rotateOutfit = false) {
   started = false;
   app.classList.remove("started", "mascot-leaving", "mascot-hidden", "mascot-docked");
   if (rotateOutfit) applyMascotOutfit(true);
   setMascotEmotion("happy", "Привет! Я NOA");
+  replayMascotIntro();
 }
 
 const menuButton =
@@ -2445,6 +2459,7 @@ let pendingImageUrl = null;
 let currentChat = [];
 
 applyMascotOutfit();
+replayMascotIntro();
 
 /* =========================================================
    СТАРТ NOA
